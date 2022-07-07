@@ -4,9 +4,9 @@
 #include <Servo.h>
 
 // Bluetooth
-const unsigned int TXpin = 9;
-const unsigned int RXpin = 8;
-SoftwareSerial bluetooth(RXpin, TXpin); // (RX, TX)
+const unsigned int TXpin = 8;
+const unsigned int RXpin = 9;
+SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // DHT-11
 dht DHT;
@@ -23,7 +23,7 @@ const unsigned int lm35pin = A2;
 const unsigned int buzzerPin = 6;
 unsigned int buzzerState = 0;
 
-//interrupt
+// interrupt
 const unsigned int interruptPin = 2;
 
 // servo motor
@@ -42,8 +42,8 @@ void setup()
     pinMode(buzzerPin, OUTPUT);
     // servo setup
     waterValve.attach(waterValvePin);
-    //interrupt
-    // Allow wake up pin to trigger interrupt on pullup.
+    // interrupt
+    // Setup interrupt pin to trigger interrupt on pullup.
     pinMode(interruptPin, INPUT_PULLUP);
     // delay for sensors initialization
     delay(2000);
@@ -56,12 +56,14 @@ void loop()
     receive();
 }
 
-void wakeUp(){
-   sleep_disable();
-   detachInterrupt(0);
+void wakeUp()
+{
+    sleep_disable();
+    detachInterrupt(0);
 }
 
-void sleepBoard(){
+void sleepBoard()
+{
     sleep_enable();
     attachInterrupt(0, wakeUp, LOW);
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
@@ -69,7 +71,8 @@ void sleepBoard(){
     sleep_cpu();
 }
 
-void receive(){
+void receive()
+{
     Serial.println("wakkk");
     // Receive
     if (bluetooth.available())
@@ -109,7 +112,7 @@ void transmit(String message)
 {
     bluetooth.println(message);
 }
-
+// TODO: make buzzer beeping periodically
 void buzzer()
 {
     buzzerState = !buzzerState;
@@ -162,12 +165,13 @@ void temperatureSensor(char command)
     else if (command == 'O')
     {
         temperature = analogRead(lm35pin);
-        float mv = ( temperature/1024.0)*5000;
-        float cel = mv/10;
+        float mv = (temperature / 1024.0) * 5000;
+        float cel = mv / 10;
         String msg = "OT_" + String(cel);
         transmit(msg);
     }
-    else{
+    else
+    {
         return;
     }
 }
