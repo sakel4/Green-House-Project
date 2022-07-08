@@ -1,4 +1,5 @@
 #include <SoftwareSerial.h>
+
 #include <Stepper.h>
 
 // Bluetooth
@@ -14,7 +15,7 @@ const unsigned int stepperPinIn4 = 21;
 // Defines the number of steps per rotation
 const unsigned int stepsPerRevolution = 2038;
 // Pins entered in sequence IN1-IN3-IN2-IN4 for proper step sequence
-Stepper myStepper = Stepper(stepsPerRevolution, stepperPinIn1, stepperPinIn3, stepperPinIn2, stepperPinIn4);
+Stepper stepper = Stepper(stepsPerRevolution, stepperPinIn1, stepperPinIn3, stepperPinIn2, stepperPinIn4);
 
 // Led
 const unsigned int redLedPin = 25;
@@ -32,15 +33,17 @@ const unsigned int maxWaterTankCapacity = 450;
 const unsigned int soilMoistureSensorPin = 33;
 // Touch sensors
 // TODO: Find touch sensors pins
-const unsigned int startTouchSensor = 33;
-const unsigned int middleTouchSensor = 33;
-const unsigned int endTouchSensor = 33;
+const unsigned int startTouchSensorPin = 33;
+const unsigned int middleTouchSensorPin = 33;
+const unsigned int endTouchSensorPin = 33;
 
 // DC MOTOR
 const unsigned int dcMotorPin = 34;
 
 // global variables
 unsigned int metric = 0;
+unsigned int doesHumidification = 0;
+unsigned int doesDeHumidification = 0;
 
 void setup()
 {
@@ -61,9 +64,11 @@ void loop()
 {
     // TODO: Setup deep sleep
     // TODO: delay for sensors
-    // TODO: Check if bluetooth received message
-    //       Execute action
-    // TODO: Request Metrics
+    // Execute action
+    regulateTemperature();
+    humiditySystem();
+    waterLevelCheck();
+    soilMoistureCheck();
 }
 
 // TODO: Request Metrics from Slave(Arduino)
@@ -249,32 +254,84 @@ void regulateTemperature()
 
 void airConditioning(unsigned int tempIn, unsigned int tempOut)
 {
+    unsigned int doesCooling = 0;
+    unsigned int doesHeating = 0;
+
     if (tempIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
+        digitalWrite(dcMotorPin, HIGH);
+        doesHeating = 1;
         digitalWrite(redLedPin, HIGH);
     }
     else if (tempIn >= 28)
     {
         Serial.println("Hot Air-Conditioning disabled!");
+        doesHeating = 0;
         digitalWrite(redLedPin, LOW);
     }
 
     if (tempIn > 30)
     {
         Serial.println("Activating Cold Air-Conditioning!");
+        digitalWrite(dcMotorPin, HIGH);
+        doesCooling = 1;
         digitalWrite(greenLedPin, HIGH);
     }
     else if (tempIn < 25)
     {
         Serial.println("Cold Air-Conditioning disabled!");
+        doesCooling = 0;
         digitalWrite(greenLedPin, LOW);
+    }
+
+    if (!doesCooling and !doesHeating)
+    {
+        digitalWrite(dcMotorPin, LOW);
+    }
+}
+
+void changeShutterState(char state)
+{
+    unsigned int touched = 0;
+    if (state == 'C')
+    {
+        // TODO: Check touch sensors values and change do while condition!!!!!
+        touched = touchRead(endTouchSensorPin);
+        do
+        {
+            // CW movement
+            stepper.setSpeed(10);
+            stepper.step(stepsPerRevolution);
+            delay(800);
+        } while (touched < 20);
+    }
+    else if (state == 'O')
+    {
+        // TODO: call AI to decide the state (Middle or Fully Open)
+        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        do
+        {
+            // CCW movement
+            stepper.setSpeed(10);
+            stepper.step(-stepsPerRevolution);
+            delay(800);
+        } while (touched < 20);
     }
 }
 
 void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int lightIn, unsigned int lightOut)
 {
-    // TODO: logic
+    // Open Shutter (when Inside temperature is 1C above Outside temperature)
+    if (tempIn == (tempOut + 1))
+    {
+        changeShutterState('O');
+    }
+    // Open Shutter (when Inside temperature is 1C above Outside temperature)
+    else if (tempIn == (tempOut - 1))
+    {
+        changeShutterState('C');
+    }
 }
 
 // TODO: Humidification System (DC Motor)
@@ -284,6 +341,41 @@ void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int l
     - Active humidification/dehumidification (until humidity reaches 60%)
     - Yellow Led ON (until humidity reaches 60%)
 */
+
+void humiditySystem()
+{
+    getMetric("IH");
+    unsigned int humidity = metric;
+
+    if (humidity < 50)
+    {
+        // humidification
+        digitalWrite(dcMotorPin, HIGH);
+        digitalWrite(yellowLedPin, HIGH);
+        doesHumidification = 1;
+    }
+    else if (humidity > 70)
+    {
+        // de-humidification
+        digitalWrite(dcMotorPin, HIGH);
+        digitalWrite(yellowLedPin, HIGH);
+        doesDeHumidification = 1;
+    }
+
+    if (doesHumidification and humidity >= 60)
+    {
+        digitalWrite(dcMotorPin, LOW);
+        digitalWrite(yellowLedPin, LOW);
+        doesHumidification = 0;
+    }
+
+    if (doesDeHumidification and humidity <= 60)
+    {
+        digitalWrite(dcMotorPin, LOW);
+        digitalWrite(yellowLedPin, LOW);
+        doesDeHumidification = 0;
+    }
+}
 
 // TODO: Deep Sleep for power saving
 
