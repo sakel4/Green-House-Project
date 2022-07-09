@@ -3,8 +3,8 @@
 #include <Stepper.h>
 
 // Bluetooth
-const unsigned int TXpin = 12;
-const unsigned int RXpin = 14;
+const unsigned int TXpin = 22;
+const unsigned int RXpin = 23;
 SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // Stepper
@@ -49,6 +49,7 @@ void setup()
 {
     // initialize serial
     Serial.begin(9600);
+    Serial.println("Setup");
     // Bluetooth setup
     bluetooth.begin(38400);
     // Led pin setup
@@ -58,30 +59,42 @@ void setup()
     pinMode(aiLedPin, OUTPUT);
     // dc motor setup
     pinMode(dcMotorPin, OUTPUT);
+    delay(2000);
 }
 
 void loop()
 {
+    Serial.println("Loop");
     // TODO: Setup deep sleep
     // TODO: delay for sensors
+    delay(2000);
     // Execute action
-    regulateTemperature();
-    humiditySystem();
-    waterLevelCheck();
-    soilMoistureCheck();
+    //    regulateTemperature();
+    //    humiditySystem();
+    //    waterLevelCheck();
+    //    soilMoistureCheck();
 }
 
 // TODO: Request Metrics from Slave(Arduino)
 void transmit(String message)
 {
+    Serial.println("Outgoing message");
+    Serial.println(message);
     bluetooth.println(message);
 }
 
 void getMetric(String metricType)
 {
     transmit("_" + metricType);
+    long int messageTime = millis() + 15000;
     while (true)
     {
+        if (millis() > messageTime)
+        {
+            Serial.println("Late");
+            getMetric(metricType);
+            break;
+        }
         if (bluetooth.available())
         {
             String message = bluetooth.readString();
@@ -99,6 +112,7 @@ void getMetric(String metricType)
                 else
                 {
                     // request again
+                    Serial.println("Non integer");
                     getMetric(metricType);
                     break;
                 }
@@ -106,6 +120,7 @@ void getMetric(String metricType)
             else
             {
                 // request again
+                Serial.println("Wrong response");
                 getMetric(metricType);
                 break;
             }
@@ -134,7 +149,7 @@ double getWaterLevel()
 void waterLevelCheck()
 {
     double capacity = getWaterLevel();
-
+    //    Serial.println(capacity);
     if (capacity < 0.25 * maxWaterTankCapacity)
     {
         // requests buzzer beeping
@@ -144,6 +159,9 @@ void waterLevelCheck()
         Serial.println("Filling Tank!");
         while (true)
         {
+            capacity = getWaterLevel();
+            //            Serial.println(capacity);
+            delay(300);
             if (capacity >= maxWaterTankCapacity)
             {
                 // stop buzzer
@@ -177,7 +195,7 @@ double getSoilMoisture()
 void soilMoistureCheck()
 {
     double moisture = getSoilMoisture();
-
+    Serial.println(moisture);
     if (moisture < 40)
     {
         // open water tank valve
@@ -194,6 +212,7 @@ void soilMoistureCheck()
                 Serial.println("Irrigation Stopped!");
                 break;
             }
+            delay(300);
         }
     }
 
