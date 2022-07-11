@@ -401,4 +401,4 @@ void humiditySystem()
 
 // TODO: Deep Sleep for power saving
 
-// TODO: Server Communication (Node red)
+// TODO: Server Communication (Node red)gigi
