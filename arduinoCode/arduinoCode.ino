@@ -67,7 +67,7 @@ void sleepBoard()
     sleep_enable();
     attachInterrupt(0, wakeUp, LOW);
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    delay(2000);
+    delay(100);
     sleep_cpu();
 }
 

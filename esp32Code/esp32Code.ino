@@ -1,6 +1,8 @@
 #include <SoftwareSerial.h>
-
 #include <Stepper.h>
+
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP 7        /* Time ESP32 will go to sleep (in seconds) */
 
 // Bluetooth
 const unsigned int TXpin = 22;
@@ -38,7 +40,7 @@ const unsigned int middleTouchSensorPin = 33;
 const unsigned int endTouchSensorPin = 33;
 
 // DC MOTOR
-const unsigned int dcMotorPin = 34;
+const unsigned int dcMotorPin = 12;
 
 // global variables
 unsigned int metric = 0;
@@ -50,6 +52,8 @@ void setup()
     // initialize serial
     Serial.begin(9600);
     Serial.println("Setup");
+    // Setup time to sleep
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
     // Bluetooth setup
     bluetooth.begin(38400);
     // Led pin setup
@@ -60,19 +64,17 @@ void setup()
     // dc motor setup
     pinMode(dcMotorPin, OUTPUT);
     delay(2000);
+    regulateTemperature();
+    humiditySystem();
+    // waterLevelCheck();
+    // soilMoistureCheck();
+    Serial.println("Sleep for 10 seconds");
+    Serial.flush();
+    esp_deep_sleep_start();
 }
 
 void loop()
 {
-    Serial.println("Loop");
-    // TODO: Setup deep sleep
-    // TODO: delay for sensors
-    delay(2000);
-    // Execute action
-    //    regulateTemperature();
-    //    humiditySystem();
-    //    waterLevelCheck();
-    //    soilMoistureCheck();
 }
 
 // TODO: Request Metrics from Slave(Arduino)
@@ -178,6 +180,7 @@ void waterLevelCheck()
 
 // TODO: Soil Moisture Detection
 /*
+ *
     # Below 40%
 
     - Irrigation starts (until 70% moisture level)
