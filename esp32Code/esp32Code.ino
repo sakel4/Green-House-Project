@@ -9,6 +9,13 @@ const unsigned int TXpin = 22;
 const unsigned int RXpin = 23;
 SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
+// Wifi
+const char *ssid = "microelectronics";
+const char *password = "microelectronics2018";
+
+// Add your MQtt Broker IP address, example:
+const char *mQtt_server = "10.0.26.133";
+
 // Stepper
 const unsigned int stepperPinIn1 = 5;
 const unsigned int stepperPinIn2 = 19;
@@ -56,6 +63,10 @@ void setup()
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
     // Bluetooth setup
     bluetooth.begin(38400);
+    // Wifi
+    setup_wifi();
+    client.setServer(mQtt_server, 1883);
+    client.setCallback(callback);
     // Led pin setup
     pinMode(redLedPin, OUTPUT);
     pinMode(yellowLedPin, OUTPUT);
@@ -64,6 +75,11 @@ void setup()
     // dc motor setup
     pinMode(dcMotorPin, OUTPUT);
     delay(2000);
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
     regulateTemperature();
     humiditySystem();
     // waterLevelCheck();
@@ -132,6 +148,62 @@ void getMetric(String metricType)
     return;
 }
 
+// Wifi setup
+void setup_wifi()
+{
+    delay(10);
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+}
+
+void reconnect()
+{
+    // Loop until we're reconnected
+    while (!client.connected())
+    {
+        Serial.print("Attempting MQTT connection...");
+        // Attempt to connect
+        if (client.connect("ESP32_Client"))
+        {
+            Serial.println("connected");
+            // Subscribe to the subject
+            // TODO: subscribe to the node red topics
+            // client.subscribe("esp32/output");
+            // client.subscribe("esp32/slider");
+        }
+        else
+        {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            // Wait 5 seconds before retrying
+            delay(5000);
+        }
+    }
+}
+
+void callback(char *topic, byte *message, unsigned int length)
+{
+}
+
+void sendToSubject(String subject, String message)
+{
+    client.publish(subject, message);
+}
 // TODO: Water Level Detection
 /*
     # below 25%
