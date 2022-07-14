@@ -10,11 +10,11 @@ const unsigned int RXpin = 23;
 SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // Wifi
-const char *ssid = "microelectronics";
-const char *password = "microelectronics2018";
+const char *ssid = "Definitely Not Wifi";
+const char *password = "xDa98.RoM!20!";
 
 // Add your MQtt Broker IP address, example:
-const char *mQtt_server = "10.0.26.133";
+const char *mQtt_server = "192.168.31.23";
 
 // Stepper
 const unsigned int stepperPinIn1 = 5;
