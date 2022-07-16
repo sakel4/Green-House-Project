@@ -1,3 +1,5 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
 #include <SoftwareSerial.h>
 #include <Stepper.h>
 
@@ -10,11 +12,13 @@ const unsigned int RXpin = 23;
 SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // Wifi
+WiFiClient espClient;
+PubSubClient client(espClient);
 const char *ssid = "Definitely Not Wifi";
-const char *password = "xDa98.RoM!20!";
-
+const char *password = "password";
 // Add your MQtt Broker IP address, example:
 const char *mQtt_server = "192.168.31.23";
+const int mQtt_brokerPort = 1883;
 
 // Stepper
 const unsigned int stepperPinIn1 = 5;
@@ -65,7 +69,7 @@ void setup()
     bluetooth.begin(38400);
     // Wifi
     setup_wifi();
-    client.setServer(mQtt_server, 1883);
+    client.setServer(mQtt_server, mQtt_brokerPort);
     client.setCallback(callback);
     // Led pin setup
     pinMode(redLedPin, OUTPUT);
@@ -182,8 +186,11 @@ void reconnect()
             Serial.println("connected");
             // Subscribe to the subject
             // TODO: subscribe to the node red topics
-            // client.subscribe("esp32/output");
-            // client.subscribe("esp32/slider");
+            client.subscribe("esp32/temperature");
+            client.subscribe("esp32/light");
+            client.subscribe("esp32/humidity");
+            client.subscribe("esp32/waterLevel");
+            client.subscribe("esp32/soilMoisture");
         }
         else
         {
@@ -202,7 +209,7 @@ void callback(char *topic, byte *message, unsigned int length)
 
 void sendToSubject(String subject, String message)
 {
-    client.publish(subject, message);
+    client.publish(subject.c_str(), message.c_str());
 }
 // TODO: Water Level Detection
 /*
@@ -217,7 +224,9 @@ double getWaterLevel()
     unsigned int sensorValue = touchRead(waterLevelSensorPin);
     // linear equation
     double result = 2.13 * pow(10, -4) * sensorValue - 1.27 * pow(10, -4);
-    return (1 / result - 100);
+    double value = (1 / result - 100);
+    sendToSubject("esp32/waterLevel", String(value));
+    return value;
 }
 
 void waterLevelCheck()
@@ -264,7 +273,9 @@ double getSoilMoisture()
     unsigned int sensorValue = touchRead(soilMoistureSensorPin);
     // linear equation
     double result = 1.12 * pow(10, -3) * sensorValue - 0.0621;
-    return (1 / result - 100);
+    double value = (1 / result - 100);
+    sendToSubject("esp32/soilMoisture", String(value));
+    return value;
 }
 
 void soilMoistureCheck()
@@ -328,12 +339,16 @@ void soilMoistureCheck()
 void regulateTemperature()
 {
     getMetric("IT");
+    sendToSubject("esp32/temperature", "IT_" + String(metric));
     unsigned int temperatureIn = metric;
     getMetric("OT");
+    sendToSubject("esp32/temperature", ")T_" + String(metric));
     unsigned int temperatureOut = metric;
     getMetric("IL");
+    sendToSubject("esp32/light", "IL_" + String(metric));
     unsigned int lightIn = metric;
     getMetric("OL");
+    sendToSubject("esp32/light", "IL_" + String(metric));
     unsigned int lightOut = metric;
 
     if (temperatureOut >= 22 and temperatureOut <= 31)
@@ -439,6 +454,7 @@ void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int l
 void humiditySystem()
 {
     getMetric("IH");
+    sendToSubject("esp32/humidity", String(metric));
     unsigned int humidity = metric;
 
     if (humidity < 50)
@@ -471,6 +487,4 @@ void humiditySystem()
     }
 }
 
-// TODO: Deep Sleep for power saving
-
-// TODO: Server Communication (Node red)gigi
+// TODO: Server Communication (Node red)
