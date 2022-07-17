@@ -1,0 +1,1925 @@
+[
+    {
+        "id": "1d02a6e279f3ab39",
+        "type": "aedes broker",
+        "z": "82c43252454d5893",
+        "name": "",
+        "mqtt_port": "3883",
+        "mqtt_ws_bind": "port",
+        "mqtt_ws_port": "",
+        "mqtt_ws_path": "",
+        "cert": "",
+        "key": "",
+        "certname": "",
+        "keyname": "",
+        "dburl": "",
+        "usetls": false,
+        "x": 130,
+        "y": 40,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "6b594e7e55625744",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/temperature",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 630,
+        "y": 260,
+        "wires": [
+            [
+                "909130e69cb5d6c8"
+            ]
+        ]
+    },
+    {
+        "id": "6709a1836af18212",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/light",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 600,
+        "y": 500,
+        "wires": [
+            [
+                "dda14dd750aa02ed"
+            ]
+        ]
+    },
+    {
+        "id": "d7857bf831605b8a",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/humidity",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 620,
+        "y": 740,
+        "wires": [
+            [
+                "13a26d7a85036fdc"
+            ]
+        ]
+    },
+    {
+        "id": "9a0b2c25e0af766b",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/waterLevel",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 620,
+        "y": 980,
+        "wires": [
+            [
+                "91de38638c3cbf3c"
+            ]
+        ]
+    },
+    {
+        "id": "856bb4546fe24cbf",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/soilMoisture",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 630,
+        "y": 1220,
+        "wires": [
+            [
+                "826b04f7481f571d"
+            ]
+        ]
+    },
+    {
+        "id": "10b161a3725092ca",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Temperature Write",
+        "measurement": "temperature",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 2070,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "33521ab3c8915513",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Internal Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.internal",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1780,
+        "y": 200,
+        "wires": [
+            [
+                "10b161a3725092ca"
+            ]
+        ]
+    },
+    {
+        "id": "909130e69cb5d6c8",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Spilt",
+        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = parseInt(input[1]);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 260,
+        "wires": [
+            [
+                "7023f42f98d67058"
+            ]
+        ]
+    },
+    {
+        "id": "7023f42f98d67058",
+        "type": "switch",
+        "z": "82c43252454d5893",
+        "name": "Type Check",
+        "property": "type",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "IT",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "OT",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 1170,
+        "y": 260,
+        "wires": [
+            [
+                "4f173b34e437064a"
+            ],
+            [
+                "93cade08a56afaa1"
+            ]
+        ]
+    },
+    {
+        "id": "2ca5e0e64a2d19f3",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "External Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.external",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1780,
+        "y": 280,
+        "wires": [
+            [
+                "10b161a3725092ca"
+            ]
+        ]
+    },
+    {
+        "id": "896178aaa40e877d",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Light Write",
+        "measurement": "light",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 2050,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "977a4398d2980ddd",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Internal Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.internal",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1780,
+        "y": 440,
+        "wires": [
+            [
+                "896178aaa40e877d"
+            ]
+        ]
+    },
+    {
+        "id": "dda14dd750aa02ed",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Spilt",
+        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = parseInt(input[1]);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 500,
+        "wires": [
+            [
+                "c2b627a0166aa832"
+            ]
+        ]
+    },
+    {
+        "id": "c2b627a0166aa832",
+        "type": "switch",
+        "z": "82c43252454d5893",
+        "name": "Type Check",
+        "property": "type",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "IL",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "OL",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 1170,
+        "y": 500,
+        "wires": [
+            [
+                "6ba44d1143975bf0"
+            ],
+            [
+                "2ac3577b6bdd0453"
+            ]
+        ]
+    },
+    {
+        "id": "362a9905b94f5988",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "External Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.external",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1780,
+        "y": 540,
+        "wires": [
+            [
+                "896178aaa40e877d"
+            ]
+        ]
+    },
+    {
+        "id": "ec0553778b60f1b4",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Humidity Write",
+        "measurement": "light",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1500,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "64ba4ed5379ba6f9",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.internal",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 720,
+        "wires": [
+            [
+                "ec0553778b60f1b4"
+            ]
+        ]
+    },
+    {
+        "id": "f7d22c5eb7a9aa2d",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Light (IL_value/ OL_value)",
+        "info": "",
+        "x": 650,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "b9fc581bb4a90ed0",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Temperature (IT_value/ OT_value)",
+        "info": "",
+        "x": 680,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "d12a8f123ee5699f",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Humidity (value)",
+        "info": "",
+        "x": 620,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "da6a489f3864abc1",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Water Level Write",
+        "measurement": "waterLevel",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1510,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "00a50f24bebb5d34",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.tank",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 960,
+        "wires": [
+            [
+                "da6a489f3864abc1"
+            ]
+        ]
+    },
+    {
+        "id": "91de38638c3cbf3c",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert",
+        "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 980,
+        "wires": [
+            [
+                "00a50f24bebb5d34"
+            ],
+            [
+                "efcfdd9b1d7fe5e7"
+            ]
+        ]
+    },
+    {
+        "id": "fb7b8e868c0daca5",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Water Level (value)",
+        "info": "",
+        "x": 630,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "a888bb259fc288c5",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Moisture Write",
+        "measurement": "moisture",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1500,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "7ba1fb3e0f408cea",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.soil",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 1200,
+        "wires": [
+            [
+                "a888bb259fc288c5"
+            ]
+        ]
+    },
+    {
+        "id": "4ad29e162eae6d8e",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Soil Moisture (value)",
+        "info": "",
+        "x": 630,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "826b04f7481f571d",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert",
+        "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 1220,
+        "wires": [
+            [
+                "7ba1fb3e0f408cea"
+            ],
+            [
+                "b75656387c949bba"
+            ]
+        ]
+    },
+    {
+        "id": "13a26d7a85036fdc",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert",
+        "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 740,
+        "wires": [
+            [
+                "64ba4ed5379ba6f9"
+            ],
+            [
+                "2423c6d823772ce3"
+            ]
+        ]
+    },
+    {
+        "id": "582976690925d692",
+        "type": "inject",
+        "z": "82c43252454d5893",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "330",
+        "payloadType": "str",
+        "x": 590,
+        "y": 1800,
+        "wires": [
+            [
+                "f4dbe5725af90e23"
+            ]
+        ]
+    },
+    {
+        "id": "f4dbe5725af90e23",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "",
+        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = input[1];\n\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 1800,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "7be012fc10940d4f",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "test",
+        "info": "",
+        "x": 590,
+        "y": 1740,
+        "wires": []
+    },
+    {
+        "id": "49e9ee5f28a993ed",
+        "type": "mqtt out",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/valve",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6c38adbc301341f7",
+        "x": 930,
+        "y": 2040,
+        "wires": []
+    },
+    {
+        "id": "1ef861edf24d4971",
+        "type": "mqtt out",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/Fan",
+        "qos": "2",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6c38adbc301341f7",
+        "x": 1170,
+        "y": 2400,
+        "wires": []
+    },
+    {
+        "id": "47325521f606dedc",
+        "type": "ui_switch",
+        "z": "82c43252454d5893",
+        "name": "",
+        "label": "Hot Fan (OFF/ON)",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "state",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 630,
+        "y": 2360,
+        "wires": [
+            [
+                "a4e9890bcb374cc5"
+            ]
+        ]
+    },
+    {
+        "id": "e68b4b2c8661b898",
+        "type": "ui_switch",
+        "z": "82c43252454d5893",
+        "name": "",
+        "label": "Cold Fan (OFF/ON)",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "state",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 630,
+        "y": 2440,
+        "wires": [
+            [
+                "519cc29b5f10017e"
+            ]
+        ]
+    },
+    {
+        "id": "a4e9890bcb374cc5",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Create message",
+        "func": "msg.type = \"HOT\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 2360,
+        "wires": [
+            [
+                "1ef861edf24d4971"
+            ]
+        ]
+    },
+    {
+        "id": "519cc29b5f10017e",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Create message",
+        "func": "msg.type = \"COLD\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 2440,
+        "wires": [
+            [
+                "1ef861edf24d4971"
+            ]
+        ]
+    },
+    {
+        "id": "a419d8b4a5e38e29",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Control Fans",
+        "info": "",
+        "x": 610,
+        "y": 2280,
+        "wires": []
+    },
+    {
+        "id": "fa8a184e0f956dbc",
+        "type": "ui_slider",
+        "z": "82c43252454d5893",
+        "name": "",
+        "label": "Shutter Position",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "all",
+        "topic": "position",
+        "topicType": "msg",
+        "min": 0,
+        "max": "2",
+        "step": 1,
+        "className": "",
+        "x": 620,
+        "y": 2200,
+        "wires": [
+            [
+                "c4918b7a146b101d"
+            ]
+        ],
+        "info": " (0: Open - 1: Center - 2: Close) "
+    },
+    {
+        "id": "c4918b7a146b101d",
+        "type": "mqtt out",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/shutter",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6c38adbc301341f7",
+        "x": 940,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "a5edd032ee6b1c2e",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Control Shutter",
+        "info": "",
+        "x": 620,
+        "y": 2120,
+        "wires": []
+    },
+    {
+        "id": "150cd1ee60648f9f",
+        "type": "ui_switch",
+        "z": "82c43252454d5893",
+        "name": "",
+        "label": "Water Valvel (OFF/ON)",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 650,
+        "y": 2040,
+        "wires": [
+            [
+                "49e9ee5f28a993ed"
+            ]
+        ]
+    },
+    {
+        "id": "e344a0b1de52662c",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Control Water Valve",
+        "info": "",
+        "x": 630,
+        "y": 1960,
+        "wires": []
+    },
+    {
+        "id": "7184bd6cbd53553b",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Transmit Section",
+        "info": "",
+        "x": 440,
+        "y": 1880,
+        "wires": []
+    },
+    {
+        "id": "65cfb75bfbcb2efa",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Recieve Section",
+        "info": "",
+        "x": 440,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "4cc577be8b38b284",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/events",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 610,
+        "y": 1560,
+        "wires": [
+            [
+                "88ef5ab2bef2456a"
+            ]
+        ]
+    },
+    {
+        "id": "074e86c0ea0243c6",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Irrigation Event Write",
+        "measurement": "irrigation",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1780,
+        "y": 1420,
+        "wires": []
+    },
+    {
+        "id": "e3a380954c6128c1",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.state",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1480,
+        "y": 1420,
+        "wires": [
+            [
+                "074e86c0ea0243c6"
+            ]
+        ]
+    },
+    {
+        "id": "06dd53c9ef1102f6",
+        "type": "comment",
+        "z": "82c43252454d5893",
+        "name": "Events",
+        "info": "",
+        "x": 590,
+        "y": 1380,
+        "wires": []
+    },
+    {
+        "id": "88ef5ab2bef2456a",
+        "type": "switch",
+        "z": "82c43252454d5893",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "IRRIGATION",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "NO-IRRIGATION",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "COOLING",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "HEATING",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "NO-AC",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "M_S",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "M_M",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "M_E",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "S_S",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "S_M",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "S_E",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "T_F",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "T_SF",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 13,
+        "x": 910,
+        "y": 1560,
+        "wires": [
+            [
+                "355efadfc23c60b5"
+            ],
+            [
+                "355efadfc23c60b5"
+            ],
+            [
+                "fb2530d69549bb45"
+            ],
+            [
+                "fb2530d69549bb45"
+            ],
+            [
+                "fb2530d69549bb45"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "cb7815217be91e9f"
+            ],
+            [
+                "2de6b1f9ca0c02b6"
+            ],
+            [
+                "2de6b1f9ca0c02b6"
+            ]
+        ]
+    },
+    {
+        "id": "355efadfc23c60b5",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Irrigation values added (0/1)",
+        "func": "if(msg.payload == \"IRRIGATION\"){\n    msg.value = 1;\n    msg.dpMessage = \"Irrigation ON\";\n}else{\n    msg.value = 0;\n    msg.dpMessage = \"Irrigation OFF\";\n}\n\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 1460,
+        "wires": [
+            [
+                "fb15378228782664"
+            ],
+            [
+                "e3a380954c6128c1"
+            ]
+        ]
+    },
+    {
+        "id": "fb2530d69549bb45",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Air Conditioning values (0/1/2)",
+        "func": "if(msg.payload == \"NO-AC\"){\n    msg.value = 0;\n    msg.dpMessage = \"No Air Conditioning\";\n}else if (msg.payload == \"COOLING\"){\n    msg.value = 1;\n    msg.dpMessage = \"Cold Air Conditioning\";    \n}else{\n    msg.value = 2;\n    msg.dpMessage = \"HOT Air Conditioning\";    \n}\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 1540,
+        "wires": [
+            [
+                "65d76468a574310e"
+            ],
+            [
+                "f638d488a3a81078"
+            ]
+        ]
+    },
+    {
+        "id": "fd8f7593f1488471",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Air conditioning Event Write",
+        "measurement": "airConditioning",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1800,
+        "y": 1500,
+        "wires": []
+    },
+    {
+        "id": "65d76468a574310e",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.type",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1480,
+        "y": 1500,
+        "wires": [
+            [
+                "fd8f7593f1488471"
+            ]
+        ]
+    },
+    {
+        "id": "fb15378228782664",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Irrigation State",
+        "format": "{{msg.dpMessage}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 1500,
+        "y": 1380,
+        "wires": []
+    },
+    {
+        "id": "f638d488a3a81078",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Air Condition State",
+        "format": "{{msg.dpMessage}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 1510,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "4f173b34e437064a",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "",
+        "func": "\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 180,
+        "wires": [
+            [
+                "be5c80387db04cad"
+            ],
+            [
+                "33521ab3c8915513"
+            ]
+        ]
+    },
+    {
+        "id": "93cade08a56afaa1",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "",
+        "func": "return msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 300,
+        "wires": [
+            [
+                "2ca5e0e64a2d19f3"
+            ],
+            [
+                "631ff9e2f636d729"
+            ]
+        ]
+    },
+    {
+        "id": "be5c80387db04cad",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Internal Temperature ",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1800,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "631ff9e2f636d729",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "External Temperature ",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1800,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "6ba44d1143975bf0",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "",
+        "func": "\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 420,
+        "wires": [
+            [
+                "b797ae5719460cbc"
+            ],
+            [
+                "977a4398d2980ddd"
+            ]
+        ]
+    },
+    {
+        "id": "2ac3577b6bdd0453",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "",
+        "func": "return msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 560,
+        "wires": [
+            [
+                "362a9905b94f5988"
+            ],
+            [
+                "0586c13b3839be98"
+            ]
+        ]
+    },
+    {
+        "id": "b797ae5719460cbc",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Internal Light Intensity",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1800,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "0586c13b3839be98",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "External Light Intensity",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1800,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "2423c6d823772ce3",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Internal Humidity ",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1190,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "efcfdd9b1d7fe5e7",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Water Level (ml)",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1180,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "b75656387c949bba",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Soil Moisture (%)",
+        "format": "{{msg.value}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 1190,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "9b7191cbcb241cfe",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "<font color=\"#1bbfff\"><h1><u>Metrics</u></h1></font>",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 740,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "2cb555b0d036755c",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "<font color=\"#1bbfff\"><h1><u>Events</u></h1></font>",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 880,
+        "y": 1380,
+        "wires": []
+    },
+    {
+        "id": "b5092b60ad586923",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "<font color=\"#1bbfff\"><h1><u>Controls</u></h1></font>",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 750,
+        "y": 1880,
+        "wires": [],
+        "info": "**D**"
+    },
+    {
+        "id": "cb7815217be91e9f",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Shutter (0/1/2)",
+        "func": "/*\n(Moves)\nM_S (Fully open)\nM_M (Partially open)\nM_E (Fully close)\n\n(Stoped)\nS_S (Fully open)\nS_M (Partially open)\nS_E (Fully close)\n*/\n\nlet splittedMessage = msg.payload.split(\"_\");\n\nif (splittedMessage[0] == \"M\"){\n    msg.display = \"Moves in order to be\"; \n}else{\n    msg.display = \"Stoped \";\n}\n\nif(splittedMessage[1] == \"S\"){\n    msg.display = msg.display + \"fully open\";\n    msg.position = 2;\n}else if(splittedMessage[1] == \"M\"){\n    msg.display = msg.display + \"partially open\";\n    msg.position = 1;\n}else if(splittedMessage[1] == \"E\"){\n    msg.display = msg.display + \"closed\";\n    msg.position = 0;\n}\n\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 1580,
+        "wires": [
+            [
+                "cb17e298aed474d8"
+            ],
+            [
+                "58347614fd1fd82d"
+            ]
+        ]
+    },
+    {
+        "id": "2de6b1f9ca0c02b6",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Tank (0/1)",
+        "func": "/*\nT_F (Tank Filling)\nT_NF (Tank Filling Stopped)\n*/\n\nif(msg.payload == \"T_F\"){\n    msg.display = \"Tank Filling\";\n    msg.value = 1;\n}else{\n    msg.display = \"Tank Filling Stopped\";\n    msg.value = 0;\n}\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1160,
+        "y": 1660,
+        "wires": [
+            [
+                "855740083c047796"
+            ],
+            [
+                "d57efdcdab921a83"
+            ]
+        ]
+    },
+    {
+        "id": "58347614fd1fd82d",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Shutter State",
+        "format": "{{msg.display}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 1490,
+        "y": 1620,
+        "wires": []
+    },
+    {
+        "id": "cb17e298aed474d8",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.state",
+                "pt": "msg",
+                "to": "position",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1480,
+        "y": 1580,
+        "wires": [
+            [
+                "1ba4dbe2dfaff389"
+            ]
+        ]
+    },
+    {
+        "id": "855740083c047796",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.state",
+                "pt": "msg",
+                "to": "position",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1480,
+        "y": 1700,
+        "wires": [
+            [
+                "ae1fda21fd6f01b3"
+            ]
+        ]
+    },
+    {
+        "id": "d57efdcdab921a83",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "d8807c8f558ef194",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Tank State",
+        "format": "{{msg.display}}",
+        "layout": "col-center",
+        "className": "",
+        "x": 1490,
+        "y": 1740,
+        "wires": []
+    },
+    {
+        "id": "1ba4dbe2dfaff389",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Shutter State Event Write",
+        "measurement": "Shutter",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1790,
+        "y": 1580,
+        "wires": []
+    },
+    {
+        "id": "ae1fda21fd6f01b3",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Tank State Event Write",
+        "measurement": "tankFilling",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1780,
+        "y": 1700,
+        "wires": []
+    },
+    {
+        "id": "6c38adbc301341f7",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": "3883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "ec0239a13d7cba62",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": "8086",
+        "protocol": "http",
+        "database": "database",
+        "name": "IOT_DB",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://influxdb:8086",
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "d8807c8f558ef194",
+        "type": "ui_group",
+        "name": "Default",
+        "tab": "89d4041f7249bf8c",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "5407e25db07d8203",
+        "type": "ui_group",
+        "name": "Metrics",
+        "tab": "89d4041f7249bf8c",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "89d4041f7249bf8c",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
