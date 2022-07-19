@@ -14,10 +14,10 @@ SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 // Wifi
 WiFiClient espClient;
 PubSubClient client(espClient);
-const char *ssid = "Definitely Not Wifi";
-const char *password = "password";
+const char *ssid = "NILE";
+const char *password = "n1l3LAB2.4GH";
 // Add your MQtt Broker IP address, example:
-const char *mQtt_server = "192.168.31.23";
+const char *mQtt_server = "10.0.22.202";
 const int mQtt_brokerPort = 1883;
 
 // Stepper
@@ -45,10 +45,9 @@ const unsigned int maxWaterTankCapacity = 450;
 // Soil Moisture
 const unsigned int soilMoistureSensorPin = 33;
 // Touch sensors
-// TODO: Find touch sensors pins
-const unsigned int startTouchSensorPin = 33;
-const unsigned int middleTouchSensorPin = 33;
-const unsigned int endTouchSensorPin = 33;
+const unsigned int startTouchSensorPin = 12;
+const unsigned int middleTouchSensorPin = 13;
+const unsigned int endTouchSensorPin = 14;
 
 // DC MOTOR
 const unsigned int dcMotorPin = 12;
@@ -57,6 +56,7 @@ const unsigned int dcMotorPin = 12;
 unsigned int metric = 0;
 unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
+char shutterState = 'O';
 
 void setup()
 {
@@ -78,6 +78,8 @@ void setup()
     pinMode(aiLedPin, OUTPUT);
     // dc motor setup
     pinMode(dcMotorPin, OUTPUT);
+    // detect shutter position
+    detectShutterPosition();
     delay(2000);
     if (!client.connected())
     {
@@ -85,7 +87,7 @@ void setup()
     }
     client.loop();
     regulateTemperature();
-    humiditySystem();
+    // humiditySystem();
     // waterLevelCheck();
     // soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
@@ -95,6 +97,17 @@ void setup()
 
 void loop()
 {
+}
+// TODO: Detect shutter state - position
+void detectShutterPosition()
+{
+
+    if (touchRead(endTouchSensorPin) <= 40)
+        shutterState = 'C';
+    else if (touchRead(middleTouchSensorPin) <= 40)
+        shutterState = 'M';
+    else
+        shutterState = 'O';
 }
 
 // TODO: Request Metrics from Slave(Arduino)
@@ -313,8 +326,8 @@ void soilMoistureCheck()
 
     ## Shutter System
 
-    - Open Shutter (when Inside temperature is 1C above Outside temperature)
-    - Close Shutter (when Inside temperature is 1C below Outside temperature)
+    - Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    - Close Shutter (when Inside temperature is at least 1C below Outside temperature)
 
     ### Height Regulation (AI System)
 
@@ -414,6 +427,7 @@ void changeShutterState(char state)
             stepper.step(stepsPerRevolution);
             delay(800);
         } while (touched < 20);
+        shutterState = 'C';
     }
     else if (state == 'O')
     {
@@ -426,18 +440,19 @@ void changeShutterState(char state)
             stepper.step(-stepsPerRevolution);
             delay(800);
         } while (touched < 20);
+        shutterState = 'O';
     }
 }
 
 void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int lightIn, unsigned int lightOut)
 {
-    // Open Shutter (when Inside temperature is 1C above Outside temperature)
-    if (tempIn == (tempOut + 1))
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    if (tempIn >= (tempOut + 1))
     {
         changeShutterState('O');
     }
-    // Open Shutter (when Inside temperature is 1C above Outside temperature)
-    else if (tempIn == (tempOut - 1))
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    else if (tempIn <= (tempOut - 1))
     {
         changeShutterState('C');
     }

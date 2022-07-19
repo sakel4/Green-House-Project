@@ -33,8 +33,9 @@
 
     \*RXD is also connected with D2 interrupt pin
 
-    > ## External Libraries
+> ## External Libraries
 
 1. DHT Library
     - [Arduino playground](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
     - [Github](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
+2. ESP32 SoftwareSerial
