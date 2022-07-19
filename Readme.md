@@ -2,6 +2,6 @@
 
 ## External Libraries
 
-    - DHT Library
-        - [Arduino playground](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
-        - [Github](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
+1. DHT Library
+    - [Arduino playground](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
+    - [Github](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
