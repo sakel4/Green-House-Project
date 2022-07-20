@@ -87,9 +87,9 @@ void setup()
     }
     client.loop();
     regulateTemperature();
-    // humiditySystem();
-    // waterLevelCheck();
-    // soilMoistureCheck();
+    humiditySystem();
+    //    waterLevelCheck();
+    soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
     esp_deep_sleep_start();
@@ -254,6 +254,7 @@ void waterLevelCheck()
         Serial.println("Buzzer Beeping!");
         // Filling Tank
         Serial.println("Filling Tank!");
+        sendToSubject("esp32/events", "Tank_Filling");
         while (true)
         {
             capacity = getWaterLevel();
@@ -265,6 +266,7 @@ void waterLevelCheck()
                 transmit("_BZ");
                 Serial.println("Buzzer stops!");
                 Serial.println("Tank Full!");
+                sendToSubject("esp32/events", "Tank_Stop_Filling");
                 break;
             }
         }
@@ -297,20 +299,23 @@ void soilMoistureCheck()
 {
     double moisture = getSoilMoisture();
     Serial.println(moisture);
-    if (moisture < 40)
+    if (moisture < 70)
     {
         // open water tank valve
         transmit("_OV");
         Serial.println("Valve Open!");
         // irrigation
         Serial.println("Irrigation Started!");
+        sendToSubject("esp32/events", "Irrigation");
         while (true)
         {
             if (getSoilMoisture() >= 70)
             {
                 transmit("_CV");
+                sendToSubject("esp32/events", "Tank_Stop_Filling");
                 Serial.println("Valve Closed!");
                 Serial.println("Irrigation Stopped!");
+                sendToSubject("esp32/events", "No-Irrigation");
                 break;
             }
             delay(300);
@@ -354,20 +359,20 @@ void soilMoistureCheck()
 void regulateTemperature()
 {
     getMetric("IT");
-    String msg = "IT_" + String(metric);
-    sendToSubject("esp32/temperature", msg);
+    String msg = String(metric);
+    sendToSubject("esp32/temperatureIN", msg);
     unsigned int temperatureIn = metric;
     getMetric("OT");
-    msg = "OT_" + String(metric);
-    sendToSubject("esp32/temperature", msg);
+    msg = String(metric);
+    sendToSubject("esp32/temperatureOUT", msg);
     unsigned int temperatureOut = metric;
     getMetric("IL");
-    msg = "IL_" + String(metric);
-    sendToSubject("esp32/light", msg);
+    msg = String(metric);
+    sendToSubject("esp32/lightIN", msg);
     unsigned int lightIn = metric;
     getMetric("OL");
-    msg = "OL_" + String(metric);
-    sendToSubject("esp32/light", msg);
+    msg = String(metric);
+    sendToSubject("esp32/lightOUT", msg);
     unsigned int lightOut = metric;
 
     if (temperatureOut >= 22 and temperatureOut <= 31)
@@ -388,6 +393,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     if (tempIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
+        sendToSubject("esp32/events", "Heating");
         digitalWrite(dcMotorPin, HIGH);
         doesHeating = 1;
         digitalWrite(redLedPin, HIGH);
@@ -402,6 +408,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     if (tempIn > 30)
     {
         Serial.println("Activating Cold Air-Conditioning!");
+        sendToSubject("esp32/events", "Cooling");
         digitalWrite(dcMotorPin, HIGH);
         doesCooling = 1;
         digitalWrite(greenLedPin, HIGH);
@@ -415,6 +422,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
 
     if (!doesCooling and !doesHeating)
     {
+        sendToSubject("esp32/events", "No-AC");
         digitalWrite(dcMotorPin, LOW);
     }
 }
@@ -426,6 +434,7 @@ void changeShutterState(char state)
     {
         // TODO: Check touch sensors values and change do while condition!!!!!
         touched = touchRead(endTouchSensorPin);
+        sendToSubject("esp32/events", "Moving_to_the_End");
         do
         {
             // CW movement
@@ -434,11 +443,13 @@ void changeShutterState(char state)
             delay(800);
         } while (touched < 20);
         shutterState = 'C';
+        sendToSubject("esp32/events", "Still_at_End");
     }
     else if (state == 'O')
     {
         // TODO: call AI to decide the state (Middle or Fully Open)
         // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        sendToSubject("esp32/events", "Moving_to_the_Start");
         do
         {
             // CCW movement
@@ -446,6 +457,7 @@ void changeShutterState(char state)
             stepper.step(-stepsPerRevolution);
             delay(800);
         } while (touched < 20);
+        sendToSubject("esp32/events", "Still_at_Start");
         shutterState = 'O';
     }
 }
