@@ -22,48 +22,6 @@
         ]
     },
     {
-        "id": "6b594e7e55625744",
-        "type": "mqtt in",
-        "z": "82c43252454d5893",
-        "name": "",
-        "topic": "esp32/temperature",
-        "qos": "2",
-        "datatype": "auto",
-        "broker": "6c38adbc301341f7",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 630,
-        "y": 260,
-        "wires": [
-            [
-                "909130e69cb5d6c8"
-            ]
-        ]
-    },
-    {
-        "id": "6709a1836af18212",
-        "type": "mqtt in",
-        "z": "82c43252454d5893",
-        "name": "",
-        "topic": "esp32/light",
-        "qos": "2",
-        "datatype": "auto",
-        "broker": "6c38adbc301341f7",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 600,
-        "y": 500,
-        "wires": [
-            [
-                "dda14dd750aa02ed"
-            ]
-        ]
-    },
-    {
         "id": "d7857bf831605b8a",
         "type": "mqtt in",
         "z": "82c43252454d5893",
@@ -77,10 +35,11 @@
         "rh": 0,
         "inputs": 0,
         "x": 620,
-        "y": 740,
+        "y": 1120,
         "wires": [
             [
-                "13a26d7a85036fdc"
+                "13a26d7a85036fdc",
+                "2423c6d823772ce3"
             ]
         ]
     },
@@ -98,10 +57,11 @@
         "rh": 0,
         "inputs": 0,
         "x": 620,
-        "y": 980,
+        "y": 1360,
         "wires": [
             [
-                "91de38638c3cbf3c"
+                "91de38638c3cbf3c",
+                "efcfdd9b1d7fe5e7"
             ]
         ]
     },
@@ -119,314 +79,11 @@
         "rh": 0,
         "inputs": 0,
         "x": 630,
-        "y": 1220,
+        "y": 1600,
         "wires": [
             [
-                "826b04f7481f571d"
-            ]
-        ]
-    },
-    {
-        "id": "10b161a3725092ca",
-        "type": "influxdb out",
-        "z": "82c43252454d5893",
-        "influxdb": "ec0239a13d7cba62",
-        "name": "Temperature Write",
-        "measurement": "temperature",
-        "precision": "",
-        "retentionPolicy": "",
-        "database": "database",
-        "precisionV18FluxV20": "ms",
-        "retentionPolicyV18Flux": "",
-        "org": "IOT",
-        "bucket": "test",
-        "x": 2070,
-        "y": 240,
-        "wires": []
-    },
-    {
-        "id": "33521ab3c8915513",
-        "type": "change",
-        "z": "82c43252454d5893",
-        "name": "Internal Format",
-        "rules": [
-            {
-                "t": "set",
-                "p": "fields.internal",
-                "pt": "msg",
-                "to": "value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "tags.timestamp",
-                "pt": "msg",
-                "to": "",
-                "tot": "date"
-            },
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "$append(fields,tags)",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1780,
-        "y": 200,
-        "wires": [
-            [
-                "10b161a3725092ca"
-            ]
-        ]
-    },
-    {
-        "id": "909130e69cb5d6c8",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "Spilt",
-        "func": "// IT_30\n// OT_27\nlet input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = parseInt(input[1]);\n\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 910,
-        "y": 260,
-        "wires": [
-            [
-                "7023f42f98d67058"
-            ]
-        ]
-    },
-    {
-        "id": "7023f42f98d67058",
-        "type": "switch",
-        "z": "82c43252454d5893",
-        "name": "Type Check",
-        "property": "type",
-        "propertyType": "msg",
-        "rules": [
-            {
-                "t": "eq",
-                "v": "IT",
-                "vt": "str"
-            },
-            {
-                "t": "eq",
-                "v": "OT",
-                "vt": "str"
-            }
-        ],
-        "checkall": "false",
-        "repair": false,
-        "outputs": 2,
-        "x": 1170,
-        "y": 260,
-        "wires": [
-            [
-                "4f173b34e437064a"
-            ],
-            [
-                "93cade08a56afaa1"
-            ]
-        ]
-    },
-    {
-        "id": "2ca5e0e64a2d19f3",
-        "type": "change",
-        "z": "82c43252454d5893",
-        "name": "External Format",
-        "rules": [
-            {
-                "t": "set",
-                "p": "fields.external",
-                "pt": "msg",
-                "to": "value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "tags.timestamp",
-                "pt": "msg",
-                "to": "",
-                "tot": "date"
-            },
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "$append(fields,tags)",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1780,
-        "y": 280,
-        "wires": [
-            [
-                "10b161a3725092ca"
-            ]
-        ]
-    },
-    {
-        "id": "896178aaa40e877d",
-        "type": "influxdb out",
-        "z": "82c43252454d5893",
-        "influxdb": "ec0239a13d7cba62",
-        "name": "Light Write",
-        "measurement": "light",
-        "precision": "",
-        "retentionPolicy": "",
-        "database": "database",
-        "precisionV18FluxV20": "ms",
-        "retentionPolicyV18Flux": "",
-        "org": "IOT",
-        "bucket": "test",
-        "x": 2050,
-        "y": 500,
-        "wires": []
-    },
-    {
-        "id": "977a4398d2980ddd",
-        "type": "change",
-        "z": "82c43252454d5893",
-        "name": "Internal Format",
-        "rules": [
-            {
-                "t": "set",
-                "p": "fields.internal",
-                "pt": "msg",
-                "to": "value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "tags.timestamp",
-                "pt": "msg",
-                "to": "",
-                "tot": "date"
-            },
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "$append(fields,tags)",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1780,
-        "y": 440,
-        "wires": [
-            [
-                "896178aaa40e877d"
-            ]
-        ]
-    },
-    {
-        "id": "dda14dd750aa02ed",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "Spilt",
-        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = parseInt(input[1]);\n\nreturn msg;",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 910,
-        "y": 500,
-        "wires": [
-            [
-                "c2b627a0166aa832"
-            ]
-        ]
-    },
-    {
-        "id": "c2b627a0166aa832",
-        "type": "switch",
-        "z": "82c43252454d5893",
-        "name": "Type Check",
-        "property": "type",
-        "propertyType": "msg",
-        "rules": [
-            {
-                "t": "eq",
-                "v": "IL",
-                "vt": "str"
-            },
-            {
-                "t": "eq",
-                "v": "OL",
-                "vt": "str"
-            }
-        ],
-        "checkall": "false",
-        "repair": false,
-        "outputs": 2,
-        "x": 1170,
-        "y": 500,
-        "wires": [
-            [
-                "6ba44d1143975bf0"
-            ],
-            [
-                "2ac3577b6bdd0453"
-            ]
-        ]
-    },
-    {
-        "id": "362a9905b94f5988",
-        "type": "change",
-        "z": "82c43252454d5893",
-        "name": "External Format",
-        "rules": [
-            {
-                "t": "set",
-                "p": "fields.external",
-                "pt": "msg",
-                "to": "value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "tags.timestamp",
-                "pt": "msg",
-                "to": "",
-                "tot": "date"
-            },
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "$append(fields,tags)",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1780,
-        "y": 540,
-        "wires": [
-            [
-                "896178aaa40e877d"
+                "826b04f7481f571d",
+                "b75656387c949bba"
             ]
         ]
     },
@@ -444,8 +101,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1500,
-        "y": 720,
+        "x": 1440,
+        "y": 1100,
         "wires": []
     },
     {
@@ -482,7 +139,7 @@
         "to": "",
         "reg": false,
         "x": 1160,
-        "y": 720,
+        "y": 1100,
         "wires": [
             [
                 "ec0553778b60f1b4"
@@ -496,7 +153,7 @@
         "name": "Light (IL_value/ OL_value)",
         "info": "",
         "x": 650,
-        "y": 420,
+        "y": 660,
         "wires": []
     },
     {
@@ -516,7 +173,7 @@
         "name": "Humidity (value)",
         "info": "",
         "x": 620,
-        "y": 660,
+        "y": 1040,
         "wires": []
     },
     {
@@ -533,8 +190,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1510,
-        "y": 960,
+        "x": 1450,
+        "y": 1340,
         "wires": []
     },
     {
@@ -571,7 +228,7 @@
         "to": "",
         "reg": false,
         "x": 1160,
-        "y": 960,
+        "y": 1340,
         "wires": [
             [
                 "da6a489f3864abc1"
@@ -582,21 +239,18 @@
         "id": "91de38638c3cbf3c",
         "type": "function",
         "z": "82c43252454d5893",
-        "name": "Convert",
+        "name": "Convert to Int",
         "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 920,
-        "y": 980,
+        "x": 940,
+        "y": 1360,
         "wires": [
             [
                 "00a50f24bebb5d34"
-            ],
-            [
-                "efcfdd9b1d7fe5e7"
             ]
         ]
     },
@@ -607,7 +261,7 @@
         "name": "Water Level (value)",
         "info": "",
         "x": 630,
-        "y": 900,
+        "y": 1280,
         "wires": []
     },
     {
@@ -624,8 +278,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1500,
-        "y": 1200,
+        "x": 1440,
+        "y": 1580,
         "wires": []
     },
     {
@@ -662,7 +316,7 @@
         "to": "",
         "reg": false,
         "x": 1160,
-        "y": 1200,
+        "y": 1580,
         "wires": [
             [
                 "a888bb259fc288c5"
@@ -676,28 +330,25 @@
         "name": "Soil Moisture (value)",
         "info": "",
         "x": 630,
-        "y": 1140,
+        "y": 1520,
         "wires": []
     },
     {
         "id": "826b04f7481f571d",
         "type": "function",
         "z": "82c43252454d5893",
-        "name": "Convert",
+        "name": "Convert to Int",
         "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 920,
-        "y": 1220,
+        "x": 940,
+        "y": 1600,
         "wires": [
             [
                 "7ba1fb3e0f408cea"
-            ],
-            [
-                "b75656387c949bba"
             ]
         ]
     },
@@ -705,21 +356,18 @@
         "id": "13a26d7a85036fdc",
         "type": "function",
         "z": "82c43252454d5893",
-        "name": "Convert",
+        "name": "Convert to Int",
         "func": "msg.value = parseInt(msg.payload);\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 920,
-        "y": 740,
+        "x": 940,
+        "y": 1120,
         "wires": [
             [
                 "64ba4ed5379ba6f9"
-            ],
-            [
-                "2423c6d823772ce3"
             ]
         ]
     },
@@ -738,10 +386,10 @@
         "once": false,
         "onceDelay": 0.1,
         "topic": "",
-        "payload": "330",
+        "payload": "IT_330",
         "payloadType": "str",
         "x": 590,
-        "y": 1800,
+        "y": 2180,
         "wires": [
             [
                 "f4dbe5725af90e23"
@@ -753,14 +401,14 @@
         "type": "function",
         "z": "82c43252454d5893",
         "name": "",
-        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = input[1];\n\nreturn msg;",
+        "func": "let input = msg.payload.split(\"_\");\nmsg.type = input[0];\nmsg.value = input[1];\nconsole.log(msg.type);\n\n// sidebar.debug(\"Log message\");\nnode.warn([\"your_variable=\"]);\nreturn msg;",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 920,
-        "y": 1800,
+        "y": 2180,
         "wires": [
             [],
             []
@@ -773,7 +421,7 @@
         "name": "test",
         "info": "",
         "x": 590,
-        "y": 1740,
+        "y": 2120,
         "wires": []
     },
     {
@@ -791,7 +439,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 930,
-        "y": 2040,
+        "y": 2420,
         "wires": []
     },
     {
@@ -809,7 +457,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 1170,
-        "y": 2400,
+        "y": 2780,
         "wires": []
     },
     {
@@ -824,7 +472,7 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 2360,
+        "y": 2740,
         "wires": [
             [
                 "1ef861edf24d4971"
@@ -843,7 +491,7 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 2440,
+        "y": 2820,
         "wires": [
             [
                 "1ef861edf24d4971"
@@ -857,7 +505,7 @@
         "name": "Control Fans",
         "info": "",
         "x": 610,
-        "y": 2280,
+        "y": 2660,
         "wires": []
     },
     {
@@ -875,7 +523,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 940,
-        "y": 2200,
+        "y": 2580,
         "wires": []
     },
     {
@@ -885,7 +533,7 @@
         "name": "Control Shutter",
         "info": "",
         "x": 620,
-        "y": 2120,
+        "y": 2500,
         "wires": []
     },
     {
@@ -895,7 +543,7 @@
         "name": "Control Water Valve",
         "info": "",
         "x": 630,
-        "y": 1960,
+        "y": 2340,
         "wires": []
     },
     {
@@ -905,7 +553,7 @@
         "name": "Transmit Section",
         "info": "",
         "x": 440,
-        "y": 1880,
+        "y": 2020,
         "wires": []
     },
     {
@@ -932,7 +580,7 @@
         "rh": 0,
         "inputs": 0,
         "x": 610,
-        "y": 1560,
+        "y": 1940,
         "wires": [
             [
                 "88ef5ab2bef2456a"
@@ -953,8 +601,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1780,
-        "y": 1420,
+        "x": 1740,
+        "y": 1840,
         "wires": []
     },
     {
@@ -990,8 +638,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1480,
-        "y": 1420,
+        "x": 1440,
+        "y": 1840,
         "wires": [
             [
                 "074e86c0ea0243c6"
@@ -1005,7 +653,7 @@
         "name": "Events",
         "info": "",
         "x": 590,
-        "y": 1380,
+        "y": 1760,
         "wires": []
     },
     {
@@ -1018,67 +666,67 @@
         "rules": [
             {
                 "t": "eq",
-                "v": "IRRIGATION",
+                "v": "Irrigation",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "NO-IRRIGATION",
+                "v": "No-Irrigation",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "COOLING",
+                "v": "Cooling",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "HEATING",
+                "v": "Heating",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "NO-AC",
+                "v": "No-AC",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "M_S",
+                "v": "Moving_to_the_Start",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "M_M",
+                "v": "Moving_to_the_Middle",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "M_E",
+                "v": "Moving_to_the_End",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "S_S",
+                "v": "Still_at_Start",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "S_M",
+                "v": "Still_at_Middle",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "S_E",
+                "v": "Still_at_End",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "T_F",
+                "v": "Tank_Filling",
                 "vt": "str"
             },
             {
                 "t": "eq",
-                "v": "T_SF",
+                "v": "Tank_Stop_Filling",
                 "vt": "str"
             }
         ],
@@ -1086,46 +734,59 @@
         "repair": false,
         "outputs": 13,
         "x": 910,
-        "y": 1560,
+        "y": 1940,
         "wires": [
             [
-                "355efadfc23c60b5"
+                "355efadfc23c60b5",
+                "fb15378228782664"
             ],
             [
-                "355efadfc23c60b5"
+                "355efadfc23c60b5",
+                "fb15378228782664"
             ],
             [
-                "fb2530d69549bb45"
+                "fb2530d69549bb45",
+                "f638d488a3a81078"
             ],
             [
-                "fb2530d69549bb45"
+                "fb2530d69549bb45",
+                "f638d488a3a81078"
             ],
             [
-                "fb2530d69549bb45"
+                "fb2530d69549bb45",
+                "f638d488a3a81078"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "cb7815217be91e9f"
+                "cb7815217be91e9f",
+                "58347614fd1fd82d"
             ],
             [
-                "2de6b1f9ca0c02b6"
+                "2de6b1f9ca0c02b6",
+                "d57efdcdab921a83"
             ],
             [
-                "2de6b1f9ca0c02b6"
+                "2de6b1f9ca0c02b6",
+                "d57efdcdab921a83"
             ]
         ]
     },
@@ -1135,17 +796,14 @@
         "z": "82c43252454d5893",
         "name": "Irrigation values added (0/1)",
         "func": "if(msg.payload == \"IRRIGATION\"){\n    msg.value = 1;\n    msg.dpMessage = \"Irrigation ON\";\n}else{\n    msg.value = 0;\n    msg.dpMessage = \"Irrigation OFF\";\n}\n\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1220,
-        "y": 1460,
+        "y": 1840,
         "wires": [
-            [
-                "fb15378228782664"
-            ],
             [
                 "e3a380954c6128c1"
             ]
@@ -1157,19 +815,16 @@
         "z": "82c43252454d5893",
         "name": "Air Conditioning values (0/1/2)",
         "func": "if(msg.payload == \"NO-AC\"){\n    msg.value = 0;\n    msg.dpMessage = \"No Air Conditioning\";\n}else if (msg.payload == \"COOLING\"){\n    msg.value = 1;\n    msg.dpMessage = \"Cold Air Conditioning\";    \n}else{\n    msg.value = 2;\n    msg.dpMessage = \"HOT Air Conditioning\";    \n}\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1230,
-        "y": 1540,
+        "y": 1920,
         "wires": [
             [
                 "65d76468a574310e"
-            ],
-            [
-                "f638d488a3a81078"
             ]
         ]
     },
@@ -1187,8 +842,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1800,
-        "y": 1500,
+        "x": 1760,
+        "y": 1920,
         "wires": []
     },
     {
@@ -1224,8 +879,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1480,
-        "y": 1500,
+        "x": 1440,
+        "y": 1920,
         "wires": [
             [
                 "fd8f7593f1488471"
@@ -1242,11 +897,11 @@
         "height": 0,
         "name": "",
         "label": "Irrigation State",
-        "format": "{{msg.dpMessage}}",
+        "format": "{{msg.payload}}",
         "layout": "col-center",
         "className": "",
-        "x": 1500,
-        "y": 1380,
+        "x": 1180,
+        "y": 1800,
         "wires": []
     },
     {
@@ -1259,167 +914,11 @@
         "height": 0,
         "name": "",
         "label": "Air Condition State",
-        "format": "{{msg.dpMessage}}",
+        "format": "{{msg.payload}}",
         "layout": "col-center",
         "className": "",
-        "x": 1510,
-        "y": 1540,
-        "wires": []
-    },
-    {
-        "id": "4f173b34e437064a",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "",
-        "func": "\nreturn msg;",
-        "outputs": 2,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1480,
-        "y": 180,
-        "wires": [
-            [
-                "be5c80387db04cad"
-            ],
-            [
-                "33521ab3c8915513"
-            ]
-        ]
-    },
-    {
-        "id": "93cade08a56afaa1",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "",
-        "func": "return msg;",
-        "outputs": 2,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1480,
-        "y": 300,
-        "wires": [
-            [
-                "2ca5e0e64a2d19f3"
-            ],
-            [
-                "631ff9e2f636d729"
-            ]
-        ]
-    },
-    {
-        "id": "be5c80387db04cad",
-        "type": "ui_text",
-        "z": "82c43252454d5893",
-        "group": "5407e25db07d8203",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Internal Temperature ",
-        "format": "{{msg.value}}",
-        "layout": "row-spread",
-        "className": "",
-        "x": 1800,
-        "y": 160,
-        "wires": []
-    },
-    {
-        "id": "631ff9e2f636d729",
-        "type": "ui_text",
-        "z": "82c43252454d5893",
-        "group": "5407e25db07d8203",
-        "order": 3,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "External Temperature ",
-        "format": "{{msg.value}}",
-        "layout": "row-spread",
-        "className": "",
-        "x": 1800,
-        "y": 320,
-        "wires": []
-    },
-    {
-        "id": "6ba44d1143975bf0",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "",
-        "func": "\nreturn msg;",
-        "outputs": 2,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1480,
-        "y": 420,
-        "wires": [
-            [
-                "b797ae5719460cbc"
-            ],
-            [
-                "977a4398d2980ddd"
-            ]
-        ]
-    },
-    {
-        "id": "2ac3577b6bdd0453",
-        "type": "function",
-        "z": "82c43252454d5893",
-        "name": "",
-        "func": "return msg;",
-        "outputs": 2,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1480,
-        "y": 560,
-        "wires": [
-            [
-                "362a9905b94f5988"
-            ],
-            [
-                "0586c13b3839be98"
-            ]
-        ]
-    },
-    {
-        "id": "b797ae5719460cbc",
-        "type": "ui_text",
-        "z": "82c43252454d5893",
-        "group": "5407e25db07d8203",
-        "order": 4,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Internal Light Intensity",
-        "format": "{{msg.value}}",
-        "layout": "row-spread",
-        "className": "",
-        "x": 1800,
-        "y": 400,
-        "wires": []
-    },
-    {
-        "id": "0586c13b3839be98",
-        "type": "ui_text",
-        "z": "82c43252454d5893",
-        "group": "5407e25db07d8203",
-        "order": 5,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "External Light Intensity",
-        "format": "{{msg.value}}",
-        "layout": "row-spread",
-        "className": "",
-        "x": 1800,
-        "y": 580,
+        "x": 1190,
+        "y": 1880,
         "wires": []
     },
     {
@@ -1427,16 +926,16 @@
         "type": "ui_text",
         "z": "82c43252454d5893",
         "group": "5407e25db07d8203",
-        "order": 6,
+        "order": 5,
         "width": 0,
         "height": 0,
         "name": "",
         "label": "Internal Humidity ",
-        "format": "{{msg.value}}",
+        "format": "{{msg.payload + \" %\"}}",
         "layout": "row-spread",
-        "className": "",
-        "x": 1190,
-        "y": 760,
+        "className": "humidity",
+        "x": 950,
+        "y": 1160,
         "wires": []
     },
     {
@@ -1444,16 +943,16 @@
         "type": "ui_text",
         "z": "82c43252454d5893",
         "group": "5407e25db07d8203",
-        "order": 7,
+        "order": 6,
         "width": 0,
         "height": 0,
         "name": "",
         "label": "Water Level (ml)",
-        "format": "{{msg.value}}",
+        "format": "{{msg.payload + \" ml\"}}",
         "layout": "row-spread",
-        "className": "",
-        "x": 1180,
-        "y": 1000,
+        "className": "tank",
+        "x": 940,
+        "y": 1400,
         "wires": []
     },
     {
@@ -1461,16 +960,16 @@
         "type": "ui_text",
         "z": "82c43252454d5893",
         "group": "5407e25db07d8203",
-        "order": 8,
+        "order": 7,
         "width": 0,
         "height": 0,
         "name": "",
         "label": "Soil Moisture (%)",
-        "format": "{{msg.value}}",
+        "format": "{{msg.payload + \" %\"}}",
         "layout": "row-spread",
-        "className": "",
-        "x": 1190,
-        "y": 1240,
+        "className": "soil",
+        "x": 950,
+        "y": 1640,
         "wires": []
     },
     {
@@ -1479,19 +978,16 @@
         "z": "82c43252454d5893",
         "name": "Shutter (0/1/2)",
         "func": "/*\n(Moves)\nM_S (Fully open)\nM_M (Partially open)\nM_E (Fully close)\n\n(Stoped)\nS_S (Fully open)\nS_M (Partially open)\nS_E (Fully close)\n*/\n\nlet splittedMessage = msg.payload.split(\"_\");\n\nif (splittedMessage[0] == \"M\"){\n    msg.display = \"Moves in order to be\"; \n}else{\n    msg.display = \"Still \";\n}\n\nif(splittedMessage[1] == \"S\"){\n    msg.display = msg.display + \"fully open\";\n    msg.position = 2;\n}else if(splittedMessage[1] == \"M\"){\n    msg.display = msg.display + \"partially open\";\n    msg.position = 1;\n}else if(splittedMessage[1] == \"E\"){\n    msg.display = msg.display + \"closed\";\n    msg.position = 0;\n}\n\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1180,
-        "y": 1580,
+        "y": 1960,
         "wires": [
             [
                 "cb17e298aed474d8"
-            ],
-            [
-                "58347614fd1fd82d"
             ]
         ]
     },
@@ -1501,19 +997,16 @@
         "z": "82c43252454d5893",
         "name": "Tank (0/1)",
         "func": "/*\nT_F (Tank Filling)\nT_NF (Tank Filling Stopped)\n*/\n\nif(msg.payload == \"T_F\"){\n    msg.display = \"Tank Filling\";\n    msg.value = 1;\n}else{\n    msg.display = \"Tank Filling Stopped\";\n    msg.value = 0;\n}\nreturn msg;",
-        "outputs": 2,
+        "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1160,
-        "y": 1660,
+        "y": 2040,
         "wires": [
             [
                 "855740083c047796"
-            ],
-            [
-                "d57efdcdab921a83"
             ]
         ]
     },
@@ -1527,11 +1020,11 @@
         "height": 0,
         "name": "",
         "label": "Shutter State",
-        "format": "{{msg.display}}",
+        "format": "{{msg.payload}}",
         "layout": "col-center",
         "className": "",
-        "x": 1490,
-        "y": 1620,
+        "x": 1170,
+        "y": 2000,
         "wires": []
     },
     {
@@ -1567,8 +1060,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1480,
-        "y": 1580,
+        "x": 1440,
+        "y": 1960,
         "wires": [
             [
                 "1ba4dbe2dfaff389"
@@ -1585,7 +1078,7 @@
                 "t": "set",
                 "p": "fields.state",
                 "pt": "msg",
-                "to": "position",
+                "to": "value",
                 "tot": "msg"
             },
             {
@@ -1608,8 +1101,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1480,
-        "y": 1700,
+        "x": 1440,
+        "y": 2040,
         "wires": [
             [
                 "ae1fda21fd6f01b3"
@@ -1626,11 +1119,11 @@
         "height": 0,
         "name": "",
         "label": "Tank State",
-        "format": "{{msg.display}}",
+        "format": "{{msg.payload}}",
         "layout": "col-center",
         "className": "",
-        "x": 1490,
-        "y": 1740,
+        "x": 1170,
+        "y": 2080,
         "wires": []
     },
     {
@@ -1647,8 +1140,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1790,
-        "y": 1580,
+        "x": 1750,
+        "y": 1960,
         "wires": []
     },
     {
@@ -1665,8 +1158,8 @@
         "retentionPolicyV18Flux": "",
         "org": "IOT",
         "bucket": "test",
-        "x": 1780,
-        "y": 1700,
+        "x": 1740,
+        "y": 2040,
         "wires": []
     },
     {
@@ -1696,7 +1189,7 @@
         "animate": false,
         "className": "",
         "x": 630,
-        "y": 2440,
+        "y": 2820,
         "wires": [
             [
                 "519cc29b5f10017e"
@@ -1730,7 +1223,7 @@
         "animate": false,
         "className": "",
         "x": 630,
-        "y": 2360,
+        "y": 2740,
         "wires": [
             [
                 "a4e9890bcb374cc5"
@@ -1757,7 +1250,7 @@
         "step": 1,
         "className": "",
         "x": 620,
-        "y": 2200,
+        "y": 2580,
         "wires": [
             [
                 "c4918b7a146b101d"
@@ -1770,7 +1263,7 @@
         "type": "ui_switch",
         "z": "82c43252454d5893",
         "name": "",
-        "label": "Water Valvel (OFF/ON)",
+        "label": "Water Valve (OFF/ON)",
         "tooltip": "",
         "group": "d8807c8f558ef194",
         "order": 4,
@@ -1791,8 +1284,8 @@
         "offcolor": "",
         "animate": false,
         "className": "",
-        "x": 650,
-        "y": 2040,
+        "x": 640,
+        "y": 2420,
         "wires": [
             [
                 "49e9ee5f28a993ed"
@@ -1808,7 +1301,7 @@
         "order": 10,
         "width": 0,
         "height": 0,
-        "format": "<style>\n.nr-dashboard-cardtitle{\n    text-align: center;\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n}\n.mTitle{\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n    color: #1bbfff;\n}\n</style>",
+        "format": "<style>\n.nr-dashboard-cardtitle{\n    text-align: center;\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n}\n.mTitle{\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n    color: #1bbfff;\n}\n\n.temp{\n    background-color: #c3eeff !important;\n}\n\n.light{\n    \n}\n\n.humidity{\n    background-color: #c3eeff !important;\n}\n\n.tank{\n    \n}\n\n.soil{\n    background-color: #c3eeff !important;\n}\n\n</style>",
         "storeOutMessages": true,
         "fwdInMessages": true,
         "resendOnRefresh": true,
@@ -1834,7 +1327,475 @@
         "layout": "col-center",
         "className": "",
         "x": 810,
-        "y": 1380,
+        "y": 1760,
+        "wires": []
+    },
+    {
+        "id": "406bc18a86799a51",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "External Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.external",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 440,
+        "wires": [
+            [
+                "db71e94c26b50882"
+            ]
+        ]
+    },
+    {
+        "id": "52da39d59ea5b13b",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert To Int ",
+        "func": "// IT_30\n// OT_27\nnode.warn([\"incoming message temp\"]);\nnode.warn([msg.payload]);\nmsg.value = parseInt(msg.payload);\nnode.warn([\"Converted to Int\"]);\nnode.warn([msg.value]);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 460,
+        "wires": [
+            [
+                "406bc18a86799a51"
+            ]
+        ]
+    },
+    {
+        "id": "6b72b8b2a8ca5fdf",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/temperatureOUT",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 640,
+        "y": 460,
+        "wires": [
+            [
+                "52da39d59ea5b13b",
+                "151e17a6fcf5922c"
+            ]
+        ]
+    },
+    {
+        "id": "151e17a6fcf5922c",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "External Temperature (C)",
+        "format": "{{msg.payload + \" °C\"}}",
+        "layout": "row-spread",
+        "className": "temp",
+        "x": 970,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "db71e94c26b50882",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Temperature Out Write",
+        "measurement": "temperature",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1460,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "f3d1b1e13dcdf8e7",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Internal Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.internal",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 240,
+        "wires": [
+            [
+                "ffab7e6a432ebc09"
+            ]
+        ]
+    },
+    {
+        "id": "cc91c881d3fcd00b",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert To Int ",
+        "func": "// IT_30\n// OT_27\nnode.warn([\"incoming message temp\"]);\nnode.warn([msg.payload]);\n\nmsg.value = parseInt(msg.payload);\n\nnode.warn([\"Converted to Int\"]);\nnode.warn([msg.value]);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 260,
+        "wires": [
+            [
+                "f3d1b1e13dcdf8e7"
+            ]
+        ]
+    },
+    {
+        "id": "8eebe24ea7be47bd",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/temperatureIN",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 640,
+        "y": 260,
+        "wires": [
+            [
+                "cc91c881d3fcd00b",
+                "134242641d294b3a"
+            ]
+        ]
+    },
+    {
+        "id": "ffab7e6a432ebc09",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Temperature In Write",
+        "measurement": "temperature",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1460,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "134242641d294b3a",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Internal Temperature (C)",
+        "format": "{{msg.payload + \" °C\"}}",
+        "layout": "row-spread",
+        "className": "temp",
+        "x": 970,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "8a9fad27bb13828f",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "External Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.external",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 920,
+        "wires": [
+            [
+                "a66490965d887618"
+            ]
+        ]
+    },
+    {
+        "id": "98c47e28ad7fda23",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert To Int ",
+        "func": "// IT_30\n// OT_27\nnode.warn([\"incoming message light\"]);\nnode.warn([msg.payload]);\nmsg.value = parseInt(msg.payload);\nnode.warn([\"Converted to Float\"]);\nnode.warn([msg.value]);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 940,
+        "wires": [
+            [
+                "8a9fad27bb13828f"
+            ]
+        ]
+    },
+    {
+        "id": "f5f971a4725c96c9",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/lightOUT",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 620,
+        "y": 940,
+        "wires": [
+            [
+                "98c47e28ad7fda23",
+                "4339efdf11e1dd26"
+            ]
+        ]
+    },
+    {
+        "id": "4339efdf11e1dd26",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "External  Light Intensity ",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "light",
+        "x": 960,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "a66490965d887618",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Light Out Write",
+        "measurement": "light",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1440,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "8e835771556cae2e",
+        "type": "change",
+        "z": "82c43252454d5893",
+        "name": "Internal Format",
+        "rules": [
+            {
+                "t": "set",
+                "p": "fields.internal",
+                "pt": "msg",
+                "to": "value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "tags.timestamp",
+                "pt": "msg",
+                "to": "",
+                "tot": "date"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$append(fields,tags)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1160,
+        "y": 720,
+        "wires": [
+            [
+                "05ab97145dba1773"
+            ]
+        ]
+    },
+    {
+        "id": "58bc6a5a985afc74",
+        "type": "function",
+        "z": "82c43252454d5893",
+        "name": "Convert To Int ",
+        "func": "// IT_30\n// OT_27\nnode.warn([\"incoming message light\"]);\nnode.warn([msg.payload]);\n\nmsg.value = parseInt(msg.payload);\n\nnode.warn([\"Converted to Int\"]);\nnode.warn([msg.value]);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 740,
+        "wires": [
+            [
+                "8e835771556cae2e"
+            ]
+        ]
+    },
+    {
+        "id": "9685b86a140194f0",
+        "type": "mqtt in",
+        "z": "82c43252454d5893",
+        "name": "",
+        "topic": "esp32/lightIN",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "6c38adbc301341f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 610,
+        "y": 740,
+        "wires": [
+            [
+                "58bc6a5a985afc74",
+                "06fd0cba19ed2c4c"
+            ]
+        ]
+    },
+    {
+        "id": "05ab97145dba1773",
+        "type": "influxdb out",
+        "z": "82c43252454d5893",
+        "influxdb": "ec0239a13d7cba62",
+        "name": "Light In Write",
+        "measurement": "light",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "IOT",
+        "bucket": "test",
+        "x": 1430,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "06fd0cba19ed2c4c",
+        "type": "ui_text",
+        "z": "82c43252454d5893",
+        "group": "5407e25db07d8203",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Internal Light Intensity",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "light",
+        "x": 960,
+        "y": 780,
         "wires": []
     },
     {
