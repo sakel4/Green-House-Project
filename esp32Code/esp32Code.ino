@@ -238,7 +238,8 @@ double getWaterLevel()
     // linear equation
     double result = 2.13 * pow(10, -4) * sensorValue - 1.27 * pow(10, -4);
     double value = (1 / result - 100);
-    sendToSubject("esp32/waterLevel", String(value));
+    String msg = String(value);
+    sendToSubject("esp32/waterLevel", msg);
     return value;
 }
 
@@ -287,7 +288,8 @@ double getSoilMoisture()
     // linear equation
     double result = 1.12 * pow(10, -3) * sensorValue - 0.0621;
     double value = (1 / result - 100);
-    sendToSubject("esp32/soilMoisture", String(value));
+    String msg = String(value);
+    sendToSubject("esp32/soilMoisture", msg);
     return value;
 }
 
@@ -352,16 +354,20 @@ void soilMoistureCheck()
 void regulateTemperature()
 {
     getMetric("IT");
-    sendToSubject("esp32/temperature", "IT_" + String(metric));
+    String msg = "IT_" + String(metric);
+    sendToSubject("esp32/temperature", msg);
     unsigned int temperatureIn = metric;
     getMetric("OT");
-    sendToSubject("esp32/temperature", ")T_" + String(metric));
+    msg = "OT_" + String(metric);
+    sendToSubject("esp32/temperature", msg);
     unsigned int temperatureOut = metric;
     getMetric("IL");
-    sendToSubject("esp32/light", "IL_" + String(metric));
+    msg = "IL_" + String(metric);
+    sendToSubject("esp32/light", msg);
     unsigned int lightIn = metric;
     getMetric("OL");
-    sendToSubject("esp32/light", "IL_" + String(metric));
+    msg = "OL_" + String(metric);
+    sendToSubject("esp32/light", msg);
     unsigned int lightOut = metric;
 
     if (temperatureOut >= 22 and temperatureOut <= 31)
@@ -469,7 +475,8 @@ void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int l
 void humiditySystem()
 {
     getMetric("IH");
-    sendToSubject("esp32/humidity", String(metric));
+    String msg = String(metric);
+    sendToSubject("esp32/humidity", msg);
     unsigned int humidity = metric;
 
     if (humidity < 50)
