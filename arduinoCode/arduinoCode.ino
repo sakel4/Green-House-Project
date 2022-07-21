@@ -1,4 +1,4 @@
-#include <dht.h>
+#include <DHT.h>
 #include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <Servo.h>
@@ -9,8 +9,9 @@ const unsigned int RXpin = 9;
 SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // DHT-11
-dht DHT;
 const unsigned int dht11pin = 5;
+#define DHTTYPE DHT11 
+DHT dht(dht11pin, DHTTYPE);
 
 // LDR
 const unsigned int ldrInPin = A0;
@@ -35,7 +36,7 @@ void setup()
     // initialize serial
     Serial.begin(9600);
     // start DHT-11
-    DHT.read11(dht11pin);
+    dht.begin();
     // Bluetooth setup
     bluetooth.begin(38400);
     // buzzer setup
@@ -158,7 +159,7 @@ void temperatureSensor(char command)
     int temperature = 0;
     if (command == 'I')
     {
-        temperature = DHT.temperature;
+        temperature = dht.readTemperature();
         String msg = "IT_" + String(temperature);
         transmit(msg);
     }
@@ -177,7 +178,7 @@ void temperatureSensor(char command)
 }
 void humiditySensor()
 {
-    int humidity = DHT.humidity;
+    int humidity = dht.readHumidity();
     String msg = "IH_" + String(humidity);
     transmit(msg);
 }
