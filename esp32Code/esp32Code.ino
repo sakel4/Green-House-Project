@@ -14,10 +14,10 @@ SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 // Wifi
 WiFiClient espClient;
 PubSubClient client(espClient);
-const char *ssid = "Definitely Not Wifi";
-const char *password = "xDa98.RoM!20!";
+const char *ssid = "NILE";
+const char *password = "n1l3LAB2.4GH";
 // Add your MQtt Broker IP address, example (192.168.31.23):
-const char *mQtt_server = "192.168.31.23";
+const char *mQtt_server = "10.0.22.202";
 const int mQtt_brokerPort = 1883;
 
 // Stepper
@@ -35,7 +35,7 @@ const unsigned int redLedPin = 25;
 const unsigned int yellowLedPin = 26;
 const unsigned int greenLedPin = 27;
 // AI led, TODO: Find and connect a led
-const unsigned int aiLedPin = 32;
+const unsigned int aiLedPin = 2;
 
 // Capacitive Sensors
 // TODO: CHECK THE SENSORS AND THE PINS
@@ -50,7 +50,7 @@ const unsigned int middleTouchSensorPin = 13;
 const unsigned int endTouchSensorPin = 14;
 
 // DC MOTOR
-const unsigned int dcMotorPin = 12;
+const unsigned int dcMotorPin = 32;
 
 // global variables
 float metric = 0;
@@ -88,8 +88,8 @@ void setup()
     client.loop();
     regulateTemperature();
     humiditySystem();
-    waterLevelCheck();
-    soilMoistureCheck();
+//    waterLevelCheck();
+//    soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
     esp_deep_sleep_start();
@@ -290,8 +290,9 @@ double getSoilMoisture()
     // linear equation
     double result = 1.12 * pow(10, -3) * sensorValue - 0.0621;
     double value = (1 / result - 100);
-    if (value > 100){
-      value=100;
+    if (value > 100)
+    {
+        value = 100;
     }
     String msg = String(value);
     sendToSubject("esp32/soilMoisture", msg);
@@ -302,7 +303,7 @@ void soilMoistureCheck()
 {
     double moisture = getSoilMoisture();
     Serial.println(moisture);
-    if (moisture < 70)
+    if (moisture < 40)
     {
         // open water tank valve
         transmit("_OV");
@@ -313,10 +314,10 @@ void soilMoistureCheck()
         double soilM = 0;
         do
         {
-          soilM = getSoilMoisture();
-          Serial.println(soilM);
-          delay(500);
-        }while(soilM < 70);
+            soilM = getSoilMoisture();
+            Serial.println(soilM);
+            delay(500);
+        } while (soilM < 70);
         transmit("_CV");
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         Serial.println("Valve Closed!");
@@ -377,12 +378,14 @@ void regulateTemperature()
     sendToSubject("esp32/lightOUT", msg);
     unsigned int lightOut = metric;
 
-    if (temperatureOut >= 22 and temperatureOut <= 31)
+//    if (temperatureOut >= 22 and temperatureOut <= 31)
+    if (temperatureOut >= 22 and temperatureOut <= 31){
         checkShutterState(temperatureIn, temperatureOut, lightIn, lightIn);
-    else
+    }else
     {
         // close shutter - activate air-conditioning
         // TODO: call the shutter position function
+        Serial.println("AC");
         airConditioning(temperatureIn, temperatureOut);
     }
 }
@@ -392,6 +395,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     unsigned int doesCooling = 0;
     unsigned int doesHeating = 0;
 
+//    if (tempIn < 23)
     if (tempIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
@@ -401,6 +405,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(redLedPin, HIGH);
         delay(2000);
     }
+//    else if (tempIn >= 28)
     else if (tempIn >= 28)
     {
         Serial.println("Hot Air-Conditioning disabled!");
@@ -424,7 +429,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(greenLedPin, LOW);
     }
 
-    if (doesCooling==0 and doesHeating==0)
+    if (doesCooling == 0 and doesHeating == 0)
     {
         sendToSubject("esp32/events", "No-AC");
         digitalWrite(dcMotorPin, LOW);
@@ -436,15 +441,18 @@ void changeShutterState(char state)
     unsigned int touched = 0;
     if (state == 'C')
     {
-        // TODO: Check touch sensors values and change do while condition!!!!!
         touched = touchRead(endTouchSensorPin);
+        if(shutterState == 'C' or touched < 20)
+            return;
         sendToSubject("esp32/events", "Moving_to_the_End");
+        Serial.println("Moving_to_the_End");
         do
         {
             // CW movement
-            stepper.setSpeed(10);
+            stepper.setSpeed(15);
             stepper.step(stepsPerRevolution);
             delay(800);
+            touched = touchRead(endTouchSensorPin);
         } while (touched < 20);
         shutterState = 'C';
         sendToSubject("esp32/events", "Still_at_End");
@@ -453,13 +461,18 @@ void changeShutterState(char state)
     {
         // TODO: call AI to decide the state (Middle or Fully Open)
         // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        touched = touchRead(startTouchSensorPin);
+        if(shutterState == 'O' or touched < 20)
+            return;
         sendToSubject("esp32/events", "Moving_to_the_Start");
+        Serial.println("Moving_to_the_Start");
         do
         {
             // CCW movement
-            stepper.setSpeed(10);
+            stepper.setSpeed(15);
             stepper.step(-stepsPerRevolution);
             delay(800);
+            touched = touchRead(startTouchSensorPin);
         } while (touched < 20);
         sendToSubject("esp32/events", "Still_at_Start");
         shutterState = 'O';
