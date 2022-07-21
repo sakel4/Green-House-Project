@@ -14,8 +14,8 @@ SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 // Wifi
 WiFiClient espClient;
 PubSubClient client(espClient);
-const char *ssid = "ssid";
-const char *password = "password";
+const char *ssid = "Definitely Not Wifi";
+const char *password = "xDa98.RoM!20!";
 // Add your MQtt Broker IP address, example (192.168.31.23):
 const char *mQtt_server = "192.168.31.23";
 const int mQtt_brokerPort = 1883;
@@ -53,7 +53,7 @@ const unsigned int endTouchSensorPin = 14;
 const unsigned int dcMotorPin = 12;
 
 // global variables
-unsigned int metric = 0;
+float metric = 0;
 unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
 char shutterState = 'O';
@@ -138,7 +138,7 @@ void getMetric(String metricType)
             if (message.substring(0, 2) == metricType)
             {
                 String stringValue = message.substring(3);
-                unsigned int intValue = stringValue.toInt();
+                float intValue = stringValue.toFloat();
                 if (stringValue != "0" and intValue != 0)
                 {
                     metric = intValue;
@@ -310,19 +310,18 @@ void soilMoistureCheck()
         // irrigation
         Serial.println("Irrigation Started!");
         sendToSubject("esp32/events", "Irrigation");
-        while (true)
+        double soilM = 0;
+        do
         {
-            if (getSoilMoisture() >= 70)
-            {
-                transmit("_CV");
-                sendToSubject("esp32/events", "Tank_Stop_Filling");
-                Serial.println("Valve Closed!");
-                Serial.println("Irrigation Stopped!");
-                sendToSubject("esp32/events", "No-Irrigation");
-                break;
-            }
-            delay(300);
-        }
+          soilM = getSoilMoisture();
+          Serial.println(soilM);
+          delay(500);
+        }while(soilM < 70);
+        transmit("_CV");
+        sendToSubject("esp32/events", "Tank_Stop_Filling");
+        Serial.println("Valve Closed!");
+        Serial.println("Irrigation Stopped!");
+        sendToSubject("esp32/events", "No-Irrigation");
     }
 
     return;
@@ -400,6 +399,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(dcMotorPin, HIGH);
         doesHeating = 1;
         digitalWrite(redLedPin, HIGH);
+        delay(2000);
     }
     else if (tempIn >= 28)
     {
@@ -415,6 +415,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(dcMotorPin, HIGH);
         doesCooling = 1;
         digitalWrite(greenLedPin, HIGH);
+        delay(2000);
     }
     else if (tempIn < 25)
     {
@@ -423,7 +424,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(greenLedPin, LOW);
     }
 
-    if (!doesCooling and !doesHeating)
+    if (doesCooling==0 and doesHeating==0)
     {
         sendToSubject("esp32/events", "No-AC");
         digitalWrite(dcMotorPin, LOW);

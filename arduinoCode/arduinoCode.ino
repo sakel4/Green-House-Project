@@ -10,7 +10,7 @@ SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 
 // DHT-11
 const unsigned int dht11pin = 5;
-#define DHTTYPE DHT11 
+#define DHTTYPE DHT11
 DHT dht(dht11pin, DHTTYPE);
 
 // LDR
@@ -156,7 +156,7 @@ void lightSensor(char command)
 }
 void temperatureSensor(char command)
 {
-    int temperature = 0;
+    float temperature = 0;
     if (command == 'I')
     {
         temperature = dht.readTemperature();
