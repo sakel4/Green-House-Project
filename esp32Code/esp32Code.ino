@@ -14,10 +14,10 @@ SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
 // Wifi
 WiFiClient espClient;
 PubSubClient client(espClient);
-const char *ssid = "NILE";
-const char *password = "n1l3LAB2.4GH";
-// Add your MQtt Broker IP address, example:
-const char *mQtt_server = "10.0.22.202";
+const char *ssid = "ssid";
+const char *password = "password";
+// Add your MQtt Broker IP address, example (192.168.31.23):
+const char *mQtt_server = "192.168.31.23";
 const int mQtt_brokerPort = 1883;
 
 // Stepper
@@ -88,7 +88,7 @@ void setup()
     client.loop();
     regulateTemperature();
     humiditySystem();
-    //    waterLevelCheck();
+    waterLevelCheck();
     soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
@@ -290,6 +290,9 @@ double getSoilMoisture()
     // linear equation
     double result = 1.12 * pow(10, -3) * sensorValue - 0.0621;
     double value = (1 / result - 100);
+    if (value > 100){
+      value=100;
+    }
     String msg = String(value);
     sendToSubject("esp32/soilMoisture", msg);
     return value;
