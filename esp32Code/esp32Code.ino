@@ -50,12 +50,20 @@ const unsigned int middleTouchSensorPin = 13;
 const unsigned int endTouchSensorPin = 14;
 
 // DC MOTOR
-const unsigned int dcMotorPin = 32;
+const unsigned int dcMotorPinIn1 = 2;
+const unsigned int dcMotorPinIn2 = 15;
+const unsigned int dcMotorPinEN = 32;
+const unsigned int freq = 30000;
+const unsigned int pwmChannel = 0;
+const unsigned int resolution = 8;
+const unsigned int dutyCycle = 200;
 
 // global variables
 float metric = 0;
 unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
+unsigned int doesCooling = 0;
+unsigned int doesHeating = 0;
 char shutterState = 'O';
 
 void setup()
@@ -77,7 +85,14 @@ void setup()
     pinMode(greenLedPin, OUTPUT);
     pinMode(aiLedPin, OUTPUT);
     // dc motor setup
-    pinMode(dcMotorPin, OUTPUT);
+    pinMode(dcMotorPinIn1, OUTPUT);
+    pinMode(dcMotorPinIn2, OUTPUT);
+    pinMode(dcMotorPinEN, OUTPUT);
+    // configure PWM functionalities
+    ledcSetup(pwmChannel, freq, resolution);
+
+    // attach the channel to the GPIO to be controlled
+    ledcAttachPin(dcMotorPinEN, pwmChannel);
     // detect shutter position
     detectShutterPosition();
     delay(2000);
@@ -88,8 +103,8 @@ void setup()
     client.loop();
     regulateTemperature();
     humiditySystem();
-//    waterLevelCheck();
-//    soilMoistureCheck();
+    //    waterLevelCheck();
+    //    soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
     esp_deep_sleep_start();
@@ -108,6 +123,20 @@ void detectShutterPosition()
         shutterState = 'M';
     else
         shutterState = 'O';
+}
+
+void triggerDC()
+{
+    digitalWrite(dcMotorPinIn1, HIGH);
+    digitalWrite(dcMotorPinIn2, LOW);
+    ledcWrite(pwmChannel, dutyCycle);
+    delay(3000);
+}
+
+void disableDC()
+{
+    digitalWrite(dcMotorPinIn1, LOW);
+    digitalWrite(dcMotorPinIn2, LOW);
 }
 
 // TODO: Request Metrics from Slave(Arduino)
@@ -378,10 +407,12 @@ void regulateTemperature()
     sendToSubject("esp32/lightOUT", msg);
     unsigned int lightOut = metric;
 
-//    if (temperatureOut >= 22 and temperatureOut <= 31)
-    if (temperatureOut >= 22 and temperatureOut <= 31){
+    //    if (temperatureOut >= 22 and temperatureOut <= 31)
+    if (temperatureOut >= 22 and temperatureOut <= 23)
+    {
         checkShutterState(temperatureIn, temperatureOut, lightIn, lightIn);
-    }else
+    }
+    else
     {
         // close shutter - activate air-conditioning
         // TODO: call the shutter position function
@@ -392,21 +423,19 @@ void regulateTemperature()
 
 void airConditioning(unsigned int tempIn, unsigned int tempOut)
 {
-    unsigned int doesCooling = 0;
-    unsigned int doesHeating = 0;
 
-//    if (tempIn < 23)
-    if (tempIn < 23)
+    //    if (tempIn < 23)
+    if (tempIn < 29)
     {
         Serial.println("Activating Hot Air-Conditioning!");
         sendToSubject("esp32/events", "Heating");
-        digitalWrite(dcMotorPin, HIGH);
+        triggerDC();
         doesHeating = 1;
         digitalWrite(redLedPin, HIGH);
         delay(2000);
     }
-//    else if (tempIn >= 28)
-    else if (tempIn >= 28)
+    //    else if (tempIn >= 28)
+    else if (tempIn >= 35)
     {
         Serial.println("Hot Air-Conditioning disabled!");
         doesHeating = 0;
@@ -417,7 +446,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     {
         Serial.println("Activating Cold Air-Conditioning!");
         sendToSubject("esp32/events", "Cooling");
-        digitalWrite(dcMotorPin, HIGH);
+        triggerDC();
         doesCooling = 1;
         digitalWrite(greenLedPin, HIGH);
         delay(2000);
@@ -429,10 +458,10 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         digitalWrite(greenLedPin, LOW);
     }
 
-    if (doesCooling == 0 and doesHeating == 0)
+    if (doesCooling == 0 and doesHeating == 0 and doesHumidification == 0 and doesDeHumidification == 0)
     {
         sendToSubject("esp32/events", "No-AC");
-        digitalWrite(dcMotorPin, LOW);
+        disableDC();
     }
 }
 
@@ -442,7 +471,7 @@ void changeShutterState(char state)
     if (state == 'C')
     {
         touched = touchRead(endTouchSensorPin);
-        if(shutterState == 'C' or touched < 20)
+        if (shutterState == 'C' or touched < 20)
             return;
         sendToSubject("esp32/events", "Moving_to_the_End");
         Serial.println("Moving_to_the_End");
@@ -462,7 +491,7 @@ void changeShutterState(char state)
         // TODO: call AI to decide the state (Middle or Fully Open)
         // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
         touched = touchRead(startTouchSensorPin);
-        if(shutterState == 'O' or touched < 20)
+        if (shutterState == 'O' or touched < 20)
             return;
         sendToSubject("esp32/events", "Moving_to_the_Start");
         Serial.println("Moving_to_the_Start");
@@ -511,28 +540,34 @@ void humiditySystem()
     if (humidity < 50)
     {
         // humidification
-        digitalWrite(dcMotorPin, HIGH);
+        triggerDC();
         digitalWrite(yellowLedPin, HIGH);
         doesHumidification = 1;
     }
     else if (humidity > 70)
     {
         // de-humidification
-        digitalWrite(dcMotorPin, HIGH);
+        triggerDC();
         digitalWrite(yellowLedPin, HIGH);
         doesDeHumidification = 1;
     }
 
-    if (doesHumidification and humidity >= 60)
+    if (doesHumidification == 0 and humidity >= 60)
     {
-        digitalWrite(dcMotorPin, LOW);
+        if (doesCooling == 0 and doesHeating == 0 and doesDeHumidification == 0)
+        {
+            disableDC();
+        }
         digitalWrite(yellowLedPin, LOW);
         doesHumidification = 0;
     }
 
-    if (doesDeHumidification and humidity <= 60)
+    if (doesDeHumidification == 0 and humidity <= 60)
     {
-        digitalWrite(dcMotorPin, LOW);
+        if (doesCooling == 0 and doesHeating == 0 and doesHumidification == 0)
+        {
+            disableDC();
+        }
         digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
