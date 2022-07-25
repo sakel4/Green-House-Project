@@ -121,21 +121,18 @@ void transmit(String message)
 // TODO: make buzzer beeping periodically
 void buzzer()
 {
-    while ()
+    String message = "";
+    do
     {
         tone(buzzerPin, 1000);
         delay(200);
         noTone(buzzerPin);
         if (bluetooth.available())
         {
-            String message = bluetooth.readString();
+            message = bluetooth.readString();
             Serial.println(message);
-            if (message == "BZ")
-            {
-                break;
-            }
         }
-    }
+    } while (message == "BZ");
 }
 
 void valveActuator(char command)

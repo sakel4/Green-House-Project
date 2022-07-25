@@ -35,7 +35,4 @@
 
 > ## External Libraries
 
-1. DHT Library (Moving out from this library to Adafruit version)
-    - [Arduino playground](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
-    - [Github](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib)
-2. ESP32 SoftwareSerial
+1. ESP32 SoftwareSerial
