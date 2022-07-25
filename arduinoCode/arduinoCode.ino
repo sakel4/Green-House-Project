@@ -67,6 +67,7 @@ void sleepBoard()
 {
     sleep_enable();
     attachInterrupt(0, wakeUp, LOW);
+    Serial.println("Sleep forever");
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     delay(100);
     sleep_cpu();
@@ -125,14 +126,16 @@ void buzzer()
     do
     {
         tone(buzzerPin, 1000);
-        delay(200);
+        Serial.println("buzz");
+        delay(1000);
         noTone(buzzerPin);
+        delay(500);
         if (bluetooth.available())
         {
             message = bluetooth.readString();
-            Serial.println(message);
+            message.trim();
         }
-    } while (message == "BZ");
+    } while (message.compareTo("_BZ")!=0);
 }
 
 void valveActuator(char command)
