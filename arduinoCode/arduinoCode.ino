@@ -80,30 +80,35 @@ void receive()
     {
         String message = bluetooth.readString();
         Serial.println(message);
-        char firstLetter = message.charAt(0);
-        if (firstLetter == 'B' or firstLetter == 'O' or firstLetter == 'C' or firstLetter == 'I')
+        callAction(message);
+    }
+}
+
+void callAction(String message)
+{
+    char firstLetter = message.charAt(0);
+    if (firstLetter == 'B' or firstLetter == 'O' or firstLetter == 'C' or firstLetter == 'I')
+    {
+        char secondLetter = message.charAt(1);
+        switch (secondLetter)
         {
-            char secondLetter = message.charAt(1);
-            switch (secondLetter)
-            {
-            case 'Z':
-                buzzer();
-                break;
-            case 'V':
-                valveActuator(firstLetter);
-                break;
-            case 'L':
-                lightSensor(firstLetter);
-                break;
-            case 'T':
-                temperatureSensor(firstLetter);
-                break;
-            case 'H':
-                humiditySensor();
-                break;
-            default:
-                break;
-            }
+        case 'Z':
+            buzzer();
+            break;
+        case 'V':
+            valveActuator(firstLetter);
+            break;
+        case 'L':
+            lightSensor(firstLetter);
+            break;
+        case 'T':
+            temperatureSensor(firstLetter);
+            break;
+        case 'H':
+            humiditySensor();
+            break;
+        default:
+            break;
         }
     }
 }
@@ -116,11 +121,21 @@ void transmit(String message)
 // TODO: make buzzer beeping periodically
 void buzzer()
 {
-    buzzerState = !buzzerState;
-    if (buzzerState == 1)
-        tone(buzzerPin, 100);
-    else
+    while ()
+    {
+        tone(buzzerPin, 1000);
+        delay(200);
         noTone(buzzerPin);
+        if (bluetooth.available())
+        {
+            String message = bluetooth.readString();
+            Serial.println(message);
+            if (message == "BZ")
+            {
+                break;
+            }
+        }
+    }
 }
 
 void valveActuator(char command)

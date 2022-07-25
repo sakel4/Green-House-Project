@@ -377,12 +377,12 @@ void soilMoistureCheck()
 
     ##AirCondition System
 
-    ### Below 23C
+    ### Below 23C (inside temperature)
 
     - blows HOT air (DC Motor) (until 28C)
     - Red Led ON (until 28C)
 
-    ### Above 30C
+    ### Above 30C (inside temperature)
 
     - blows cold air (DC Motor) (until 25C)
     - Green Led ON (until 25C)
