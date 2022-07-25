@@ -103,7 +103,7 @@ void setup()
     client.loop();
     regulateTemperature();
     humiditySystem();
-    //    waterLevelCheck();
+    waterLevelCheck();
     //    soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
@@ -408,7 +408,7 @@ void regulateTemperature()
     unsigned int lightOut = metric;
 
     //    if (temperatureOut >= 22 and temperatureOut <= 31)
-    if (temperatureOut >= 22 and temperatureOut <= 23)
+    if (temperatureOut >= 22 and temperatureOut <= 31)
     {
         checkShutterState(temperatureIn, temperatureOut, lightIn, lightIn);
     }
@@ -425,7 +425,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
 {
 
     //    if (tempIn < 23)
-    if (tempIn < 29)
+    if (tempIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
         sendToSubject("esp32/events", "Heating");
@@ -435,7 +435,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         delay(2000);
     }
     //    else if (tempIn >= 28)
-    else if (tempIn >= 35)
+    else if (tempIn >= 28)
     {
         Serial.println("Hot Air-Conditioning disabled!");
         doesHeating = 0;
@@ -542,6 +542,7 @@ void humiditySystem()
         // humidification
         digitalWrite(yellowLedPin, HIGH);
         Serial.println("Start Humidification");
+        sendToSubject("esp32/events", "Humidification");
         triggerDC();
         doesHumidification = 1;
     }
@@ -550,6 +551,7 @@ void humiditySystem()
         // de-humidification
         digitalWrite(yellowLedPin, HIGH);
         Serial.println("Start DeHumidification");
+        sendToSubject("esp32/events", "DeHumidification");
         triggerDC();
         doesDeHumidification = 1;
     }
@@ -557,6 +559,7 @@ void humiditySystem()
     if (doesHumidification == 1 and humidity >= 60)
     {
         Serial.println("Stop Humidification");
+        sendToSubject("esp32/events", "No_Action");
         if (doesCooling == 0 and doesHeating == 0 and doesDeHumidification == 0)
         {
             disableDC();
@@ -569,6 +572,7 @@ void humiditySystem()
     if (doesDeHumidification == 1 and humidity <= 60)
     {
         Serial.println("Stop StepHumidification");
+        sendToSubject("esp32/events", "No_Action");
         if (doesCooling == 0 and doesHeating == 0 and doesHumidification == 0)
         {
             disableDC();
