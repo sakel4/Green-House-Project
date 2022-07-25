@@ -429,9 +429,9 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     {
         Serial.println("Activating Hot Air-Conditioning!");
         sendToSubject("esp32/events", "Heating");
+        digitalWrite(redLedPin, HIGH);
         triggerDC();
         doesHeating = 1;
-        digitalWrite(redLedPin, HIGH);
         delay(2000);
     }
     //    else if (tempIn >= 28)
@@ -446,9 +446,9 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     {
         Serial.println("Activating Cold Air-Conditioning!");
         sendToSubject("esp32/events", "Cooling");
+        digitalWrite(greenLedPin, HIGH);
         triggerDC();
         doesCooling = 1;
-        digitalWrite(greenLedPin, HIGH);
         delay(2000);
     }
     else if (tempIn < 25)
@@ -540,35 +540,41 @@ void humiditySystem()
     if (humidity < 50)
     {
         // humidification
-        triggerDC();
         digitalWrite(yellowLedPin, HIGH);
+        Serial.println("Start Humidification");
+        triggerDC();
         doesHumidification = 1;
     }
     else if (humidity > 70)
     {
         // de-humidification
-        triggerDC();
         digitalWrite(yellowLedPin, HIGH);
+        Serial.println("Start DeHumidification");
+        triggerDC();
         doesDeHumidification = 1;
     }
 
-    if (doesHumidification == 0 and humidity >= 60)
+    if (doesHumidification == 1 and humidity >= 60)
     {
+        Serial.println("Stop Humidification");
         if (doesCooling == 0 and doesHeating == 0 and doesDeHumidification == 0)
         {
             disableDC();
         }
-        digitalWrite(yellowLedPin, LOW);
+        if (doesDeHumidification == 0)
+            digitalWrite(yellowLedPin, LOW);
         doesHumidification = 0;
     }
 
-    if (doesDeHumidification == 0 and humidity <= 60)
+    if (doesDeHumidification == 1 and humidity <= 60)
     {
+        Serial.println("Stop StepHumidification");
         if (doesCooling == 0 and doesHeating == 0 and doesHumidification == 0)
         {
             disableDC();
         }
-        digitalWrite(yellowLedPin, LOW);
+        if (doesHumidification == 0)
+            digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
 }
