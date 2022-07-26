@@ -103,7 +103,7 @@ void setup()
     client.loop();
     regulateTemperature();
     humiditySystem();
-    waterLevelCheck();
+    //    waterLevelCheck();
     //    soilMoistureCheck();
     Serial.println("Sleep for 10 seconds");
     Serial.flush();
@@ -112,6 +112,13 @@ void setup()
 
 void loop()
 {
+    //     if (!client.connected())
+    //    {
+    //        reconnect();
+    //    }
+    //    client.loop();
+    //    regulateTemperature();
+    //    humiditySystem();
 }
 // TODO: Detect shutter state - position
 void detectShutterPosition()
@@ -227,12 +234,15 @@ void reconnect()
         {
             Serial.println("connected");
             // Subscribe to the subject
-            // TODO: subscribe to the node red topics
-            client.subscribe("esp32/temperature");
-            client.subscribe("esp32/light");
-            client.subscribe("esp32/humidity");
-            client.subscribe("esp32/waterLevel");
-            client.subscribe("esp32/soilMoisture");
+            //            client.subscribe("esp32/temperature");
+            //            client.subscribe("esp32/light");
+            //            client.subscribe("esp32/humidity");
+            //            client.subscribe("esp32/waterLevel");
+            //            client.subscribe("esp32/soilMoisture");
+            client.subscribe("esp32/valve");
+            client.subscribe("esp32/shutter");
+            client.subscribe("esp32/fan_cold");
+            client.subscribe("esp32/fan_hot");
         }
         else
         {
@@ -247,11 +257,92 @@ void reconnect()
 
 void callback(char *topic, byte *message, unsigned int length)
 {
+    String messageTemp;
+    for (int i = 0; i < length; i++)
+    {
+        Serial.print((char)message[i]);
+        messageTemp += (char)message[i];
+    }
+    Serial.println();
+    if (String(topic) == "esp32/valve")
+    {
+        if (messageTemp == "true" or messageTemp == "false")
+            binaryDevicesControl("valve", messageTemp);
+        else
+            return;
+    }
+    if (String(topic) == "esp32/shutter")
+    {
+        Serial.println("enter");
+        if (messageTemp == "0")
+            changeShutterState('C');
+        else if (messageTemp == "1")
+            changeShutterState('M');
+        else if (messageTemp == "2")
+            changeShutterState('O');
+        else
+            return;
+    }
+    if (String(topic) == "esp32/fan_cold")
+    {
+        if (messageTemp == "true" or messageTemp == "false")
+            binaryDevicesControl("fan_cold", messageTemp);
+        else
+            return;
+    }
+    if (String(topic) == "esp32/fan_hot")
+    {
+        if (messageTemp == "true" or messageTemp == "false")
+            binaryDevicesControl("fan_hot", messageTemp);
+        else
+            return;
+    }
 }
 
 void sendToSubject(String subject, String message)
 {
     client.publish(subject.c_str(), message.c_str());
+}
+
+void binaryDevicesControl(String device, String state)
+{
+    // valve
+    if (device == "valve")
+    {
+        if (state == "true")
+            transmit("_OV");
+        else
+            transmit("_CV");
+    }
+    unsigned int led;
+    // fan
+    if (device == "fan_hot")
+    {
+        led = redLedPin;
+        Serial.print("Hot fan");
+    }
+    else if (device == "fan_cold")
+    {
+        led = greenLedPin;
+        Serial.print("Cold fan");
+    }
+    else
+        return;
+
+    if (state == "true")
+    {
+        Serial.println(" ON");
+        digitalWrite(led, HIGH);
+        triggerDC();
+    }
+    else
+    {
+        Serial.println(" OFF");
+        digitalWrite(led, LOW);
+        disableDC();
+    }
+
+    return;
 }
 // TODO: Water Level Detection
 /*
@@ -465,6 +556,24 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     }
 }
 
+void moveShutter(int direction, unsigned int sensorPin)
+{
+    unsigned int step;
+    unsigned int touched = 0;
+    if (direction > 0)
+        step = stepsPerRevolution;
+    else
+        step = -stepsPerRevolution;
+    do
+    {
+        // CW movement
+        stepper.setSpeed(10);
+        stepper.step(step);
+        delay(800);
+        touched = touchRead(sensorPin);
+        Serial.println(touched);
+    } while (touched > 20);
+}
 void changeShutterState(char state)
 {
     unsigned int touched = 0;
@@ -475,36 +584,36 @@ void changeShutterState(char state)
             return;
         sendToSubject("esp32/events", "Moving_to_the_End");
         Serial.println("Moving_to_the_End");
-        do
-        {
-            // CW movement
-            stepper.setSpeed(15);
-            stepper.step(stepsPerRevolution);
-            delay(800);
-            touched = touchRead(endTouchSensorPin);
-        } while (touched < 20);
+        moveShutter(1, endTouchSensorPin);
         shutterState = 'C';
         sendToSubject("esp32/events", "Still_at_End");
     }
     else if (state == 'O')
     {
-        // TODO: call AI to decide the state (Middle or Fully Open)
-        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        Serial.println("Enter_O");
         touched = touchRead(startTouchSensorPin);
         if (shutterState == 'O' or touched < 20)
             return;
+        Serial.println("Enter_O_afc");
         sendToSubject("esp32/events", "Moving_to_the_Start");
         Serial.println("Moving_to_the_Start");
-        do
-        {
-            // CCW movement
-            stepper.setSpeed(15);
-            stepper.step(-stepsPerRevolution);
-            delay(800);
-            touched = touchRead(startTouchSensorPin);
-        } while (touched < 20);
+        moveShutter(-1, startTouchSensorPin);
         sendToSubject("esp32/events", "Still_at_Start");
         shutterState = 'O';
+    }
+    else if (state == 'M')
+    {
+        touched = touchRead(middleTouchSensorPin);
+        if (shutterState == 'M' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_Middle");
+        Serial.println("Moving_to_the_Middle");
+        if (shutterState == 'C')
+            moveShutter(-1, middleTouchSensorPin);
+        else
+            moveShutter(1, middleTouchSensorPin);
+        sendToSubject("esp32/events", "Still_at_Middle");
+        shutterState = 'M';
     }
 }
 
@@ -513,6 +622,8 @@ void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int l
     // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
     if (tempIn >= (tempOut + 1))
     {
+        // TODO: call AI to decide the state (Middle or Fully Open)
+        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
         changeShutterState('O');
     }
     // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
@@ -539,7 +650,7 @@ void humiditySystem()
 
     if (humidity < 50)
     {
-        
+
         // humidification
         digitalWrite(yellowLedPin, HIGH);
         Serial.println("Start Humidification");
