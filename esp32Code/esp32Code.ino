@@ -3,9 +3,6 @@
 #include <SoftwareSerial.h>
 #include <Stepper.h>
 
-#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 7        /* Time ESP32 will go to sleep (in seconds) */
-
 // Bluetooth
 const unsigned int TXpin = 22;
 const unsigned int RXpin = 23;
@@ -55,11 +52,15 @@ const unsigned int dcMotorPinIn2 = 15;
 const unsigned int dcMotorPinEN = 32;
 const unsigned int freq = 30000;
 const unsigned int pwmChannel = 0;
-const unsigned int resolution = 8;
+unsigned int resolution = 8;
 const unsigned int dutyCycle = 200;
 
 // global variables
-float metric = 0;
+float temperatureIn = 9999;
+float temperatureOut = 9999;
+unsigned int lightIn = 9999;
+unsigned int lightOut = 9999;
+unsigned int humidity = 9999;
 unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
 unsigned int doesCooling = 0;
@@ -68,11 +69,9 @@ char shutterState = 'O';
 
 void setup()
 {
+    Serial.println("Setup");
     // initialize serial
     Serial.begin(9600);
-    Serial.println("Setup");
-    // Setup time to sleep
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
     // Bluetooth setup
     bluetooth.begin(38400);
     // Wifi
@@ -90,35 +89,27 @@ void setup()
     pinMode(dcMotorPinEN, OUTPUT);
     // configure PWM functionalities
     ledcSetup(pwmChannel, freq, resolution);
-
     // attach the channel to the GPIO to be controlled
     ledcAttachPin(dcMotorPinEN, pwmChannel);
     // detect shutter position
     detectShutterPosition();
     delay(2000);
+    Serial.println("Green House Setup Completed");
+    Serial.flush();
+}
+
+void loop()
+{
     if (!client.connected())
     {
         reconnect();
     }
     client.loop();
+    bluetoothReceive();
     regulateTemperature();
     humiditySystem();
     //    waterLevelCheck();
     //    soilMoistureCheck();
-    Serial.println("Sleep for 10 seconds");
-    Serial.flush();
-    esp_deep_sleep_start();
-}
-
-void loop()
-{
-    //     if (!client.connected())
-    //    {
-    //        reconnect();
-    //    }
-    //    client.loop();
-    //    regulateTemperature();
-    //    humiditySystem();
 }
 // TODO: Detect shutter state - position
 void detectShutterPosition()
@@ -149,56 +140,60 @@ void disableDC()
 // TODO: Request Metrics from Slave(Arduino)
 void transmit(String message)
 {
+    message = "_" + message;
     Serial.println("Outgoing message");
     Serial.println(message);
     bluetooth.println(message);
 }
 
-void getMetric(String metricType)
+void bluetoothReceive()
 {
-    transmit("_" + metricType);
-    long int messageTime = millis() + 15000;
-    while (true)
+    if (bluetooth.available())
     {
-        if (millis() > messageTime)
+        String message = bluetooth.readString();
+        Serial.println(message);
+        String type = (message.substring(0, 2));
+        if (type.charAt(0) == 'O' or type.charAt(0) == 'C' or type.charAt(0) == 'I')
         {
-            Serial.println("Late");
-            getMetric(metricType);
-            break;
-        }
-        if (bluetooth.available())
-        {
-            String message = bluetooth.readString();
-            Serial.println(message);
-            Serial.println(message.substring(0, 2));
-            if (message.substring(0, 2) == metricType)
+            float value = (message.substring(3)).toFloat();
+            message = message.substring(3);
+            if (message != "0" and value == 0)
+                return;
+            switch (type.charAt(1))
             {
-                String stringValue = message.substring(3);
-                float intValue = stringValue.toFloat();
-                if (stringValue != "0" and intValue != 0)
+            case 'L':
+                if (type.charAt(0) == 'I')
                 {
-                    metric = intValue;
-                    break;
+                    lightIn = value;
+                    sendToSubject("esp32/lightIN", message);
                 }
                 else
                 {
-                    // request again
-                    Serial.println("Non integer");
-                    getMetric(metricType);
-                    break;
+                    lightOut = value;
+                    sendToSubject("esp32/lightOUT", message);
                 }
-            }
-            else
-            {
-                // request again
-                Serial.println("Wrong response");
-                getMetric(metricType);
+                break;
+            case 'T':
+                if (type.charAt(0) == 'I')
+                {
+                    temperatureIn = value;
+                    sendToSubject("esp32/temperatureIN", message);
+                }
+                else
+                {
+                    temperatureOut = value;
+                    sendToSubject("esp32/temperatureOUT", message);
+                }
+                break;
+            case 'H':
+                humidity = value;
+                sendToSubject("esp32/humidity", message);
+                break;
+            default:
                 break;
             }
         }
     }
-
-    return;
 }
 
 // Wifi setup
@@ -233,13 +228,7 @@ void reconnect()
         if (client.connect("ESP32_Client"))
         {
             Serial.println("connected");
-            // Subscribe to the subject
-            //            client.subscribe("esp32/temperature");
-            //            client.subscribe("esp32/light");
-            //            client.subscribe("esp32/humidity");
-            //            client.subscribe("esp32/waterLevel");
-            //            client.subscribe("esp32/soilMoisture");
-            client.subscribe("esp32/valve");
+            // Subscribe to the topics
             client.subscribe("esp32/shutter");
             client.subscribe("esp32/fan_cold");
             client.subscribe("esp32/fan_hot");
@@ -481,42 +470,45 @@ void soilMoistureCheck()
 
 void regulateTemperature()
 {
-    getMetric("IT");
-    String msg = String(metric);
-    sendToSubject("esp32/temperatureIN", msg);
-    unsigned int temperatureIn = metric;
-    getMetric("OT");
-    msg = String(metric);
-    sendToSubject("esp32/temperatureOUT", msg);
-    unsigned int temperatureOut = metric;
-    getMetric("IL");
-    msg = String(metric);
-    sendToSubject("esp32/lightIN", msg);
-    unsigned int lightIn = metric;
-    getMetric("OL");
-    msg = String(metric);
-    sendToSubject("esp32/lightOUT", msg);
-    unsigned int lightOut = metric;
+    // transmit("IT");
+    // transmit("OT");
+    // transmit("IL");
+    // transmit("OL");
+    if (temperatureIn == 9999)
+        transmit("IT");
+    if (temperatureOut == 9999)
+        transmit("OT");
+    if (lightIn == 9999)
+        transmit("IL");
+    if (lightOut == 9999)
+        transmit("OL");
+
+    if (lightIn == 9999 or lightOut == 9999 or temperatureOut == 9999 or temperatureIn == 9999)
+        return;
 
     //    if (temperatureOut >= 22 and temperatureOut <= 31)
     if (temperatureOut >= 22 and temperatureOut <= 31)
     {
-        checkShutterState(temperatureIn, temperatureOut, lightIn, lightIn);
+        checkShutterState();
     }
     else
     {
         // close shutter - activate air-conditioning
         // TODO: call the shutter position function
         Serial.println("AC");
-        airConditioning(temperatureIn, temperatureOut);
+        airConditioning();
     }
+    temperatureIn = 9999;
+    temperatureOut = 9999;
+    lightIn = 9999;
+    lightOut = 9999;
 }
 
-void airConditioning(unsigned int tempIn, unsigned int tempOut)
+void airConditioning()
 {
 
-    //    if (tempIn < 23)
-    if (tempIn < 23)
+    //    if (temperatureIn < 23)
+    if (temperatureIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
         sendToSubject("esp32/events", "Heating");
@@ -525,15 +517,15 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         doesHeating = 1;
         delay(2000);
     }
-    //    else if (tempIn >= 28)
-    else if (tempIn >= 28)
+    //    else if (temperatureIn >= 28)
+    else if (temperatureIn >= 28)
     {
         Serial.println("Hot Air-Conditioning disabled!");
         doesHeating = 0;
         digitalWrite(redLedPin, LOW);
     }
 
-    if (tempIn > 30)
+    if (temperatureIn > 30)
     {
         Serial.println("Activating Cold Air-Conditioning!");
         sendToSubject("esp32/events", "Cooling");
@@ -542,7 +534,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         doesCooling = 1;
         delay(2000);
     }
-    else if (tempIn < 25)
+    else if (temperatureIn < 25)
     {
         Serial.println("Cold Air-Conditioning disabled!");
         doesCooling = 0;
@@ -574,6 +566,7 @@ void moveShutter(int direction, unsigned int sensorPin)
         Serial.println(touched);
     } while (touched > 20);
 }
+
 void changeShutterState(char state)
 {
     unsigned int touched = 0;
@@ -590,11 +583,9 @@ void changeShutterState(char state)
     }
     else if (state == 'O')
     {
-        Serial.println("Enter_O");
         touched = touchRead(startTouchSensorPin);
         if (shutterState == 'O' or touched < 20)
             return;
-        Serial.println("Enter_O_afc");
         sendToSubject("esp32/events", "Moving_to_the_Start");
         Serial.println("Moving_to_the_Start");
         moveShutter(-1, startTouchSensorPin);
@@ -617,17 +608,17 @@ void changeShutterState(char state)
     }
 }
 
-void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int lightIn, unsigned int lightOut)
+void checkShutterState()
 {
     // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    if (tempIn >= (tempOut + 1))
+    if (temperatureIn >= (temperatureOut + 1))
     {
         // TODO: call AI to decide the state (Middle or Fully Open)
         // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
         changeShutterState('O');
     }
     // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    else if (tempIn <= (tempOut - 1))
+    else if (temperatureIn <= (temperatureOut - 1))
     {
         changeShutterState('C');
     }
@@ -636,17 +627,17 @@ void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int l
 // TODO: Humidification System (DC Motor)
 /*
     # Outside 50% - 70%
-
     - Active humidification/dehumidification (until humidity reaches 60%)
     - Yellow Led ON (until humidity reaches 60%)
 */
 
 void humiditySystem()
 {
-    getMetric("IH");
-    String msg = String(metric);
-    sendToSubject("esp32/humidity", msg);
-    unsigned int humidity = metric;
+    if (humidity == 9999)
+    {
+        transmit("IH");
+        return;
+    }
 
     if (humidity < 50)
     {
@@ -693,6 +684,8 @@ void humiditySystem()
             digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
+
+    humidity = 9999;
 }
 
 // TODO: Server Communication (Node red)
