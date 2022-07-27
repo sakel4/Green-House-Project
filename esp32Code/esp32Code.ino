@@ -13,6 +13,18 @@ bool isDefaultValue(unsigned int value, bool isFullCheck, requestType type) {
     else
         return (value == defaultValue) ? true : false;
 }
+
+void resetValues() {
+    // reset values to default
+    temperatureIn = defaultValue;
+    temperatureOut = defaultValue;
+    lightIn = defaultValue;
+    lightOut = defaultValue;
+    tempRequestCnt = 0;
+    //reset humidity value to default
+    humidity = defaultValue;
+    humidityRequestCnt = 0;
+}
 #pragma endregion General use Functions
 
 #pragma region Shutter system
@@ -283,7 +295,7 @@ void waterLevelCheck()
 {
     double capacity = getWaterLevel();
     //    Serial.println(capacity);
-    if (capacity < 0.25 * maxWaterTankCapacity)
+    if (capacity < 0.25 * maxWaterTankCapacity and isFillingTank == false)
     {
         // requests buzzer beeping
         transmit("_BZ");
@@ -291,24 +303,17 @@ void waterLevelCheck()
         // Filling Tank
         Serial.println("Filling Tank!");
         sendToSubject("esp32/events", "Tank_Filling");
-        while (true)
-        {
-            capacity = getWaterLevel();
-            //            Serial.println(capacity);
-            delay(300);
-            if (capacity >= maxWaterTankCapacity)
-            {
-                // stop buzzer
-                transmit("_BZ");
-                Serial.println("Buzzer stops!");
-                Serial.println("Tank Full!");
-                sendToSubject("esp32/events", "Tank_Stop_Filling");
-                break;
-            }
-        }
+        isFillingTank = true;
     }
+    if (capacity >= maxWaterTankCapacity and isFillingTank == true) {
 
-    return;
+        // stop buzzer
+        transmit("_BZ");
+        Serial.println("Buzzer stops!");
+        Serial.println("Tank Full!");
+        sendToSubject("esp32/events", "Tank_Stop_Filling");
+        isFillingTank = false;
+    }
 }
 
 // TODO: Soil Moisture Detection
@@ -338,8 +343,7 @@ double getSoilMoisture()
 void soilMoistureCheck()
 {
     double moisture = getSoilMoisture();
-    Serial.println(moisture);
-    if (moisture < 40)
+    if (moisture < 40 and isIrrigating == false)
     {
         // open water tank valve
         transmit("_OV");
@@ -347,19 +351,18 @@ void soilMoistureCheck()
         // irrigation
         Serial.println("Irrigation Started!");
         sendToSubject("esp32/events", "Irrigation");
-        double soilM = 0;
-        do
-        {
-            soilM = getSoilMoisture();
-            Serial.println(soilM);
-            delay(500);
-        } while (soilM < 70);
+        isIrrigating = true;
+    }
+    if (isIrrigating == true and moisture >= 70) {
         transmit("_CV");
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         Serial.println("Valve Closed!");
         Serial.println("Irrigation Stopped!");
         sendToSubject("esp32/events", "No-Irrigation");
+        isIrrigating = false;
     }
+
+
 
     return;
 }
@@ -453,13 +456,6 @@ void requestTemperature()
         Serial.println("AC");
         airConditioning();
     }
-
-    // reset values to default
-    temperatureIn = 9999;
-    temperatureOut = 9999;
-    lightIn = 9999;
-    lightOut = 9999;
-    tempRequestCnt = 0;
 }
 
 void airConditioning()
@@ -647,8 +643,7 @@ void humiditySystem()
             digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
-    //reset humidity value to default
-    humidity = 9999;
+    resetValues();
 }
 #pragma endregion Humidity
 
@@ -693,7 +688,7 @@ void loop()
     }
     client.loop();
     bluetoothReceive();
-    requestTemperature();
+    // requestTemperature();
     humiditySystem();
     //    waterLevelCheck();
     //    soilMoistureCheck();

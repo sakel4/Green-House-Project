@@ -28,11 +28,13 @@ void receive()
         String message = bluetooth.readString();
         Serial.println(message);
         callAction(message);
+        receive();
     }
 }
 
 void callAction(String message)
 {
+    message.trim();
     char firstLetter = message.charAt(0);
     if (firstLetter == 'B' or firstLetter == 'O' or firstLetter == 'C' or firstLetter == 'I')
     {
