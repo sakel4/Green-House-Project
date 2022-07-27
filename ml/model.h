@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdarg>
-#include <math.h>
 namespace Eloquent
 {
     namespace ML
@@ -40,6 +39,30 @@ namespace Eloquent
                     decision = decision - (+kernels[8] * 1.0 + kernels[9] * 1.0 + kernels[10] * 0.895126690895 + kernels[11] * 1.0 + kernels[12] * 1.0 + kernels[13] * 1.0 + kernels[14] * 1.0 + kernels[15] * 0.073705971317 + kernels[16] * 1.0);
 
                     return decision > 0 ? 0 : 1;
+                }
+
+                /**
+                 * Predict readable class name
+                 */
+                const char *predictLabel(float *x)
+                {
+                    return idxToLabel(predict(x));
+                }
+
+                /**
+                 * Convert class idx to readable name
+                 */
+                const char *idxToLabel(uint8_t classIdx)
+                {
+                    switch (classIdx)
+                    {
+                    case 0:
+                        return "Full";
+                    case 1:
+                        return "Partial";
+                    default:
+                        return "Houston we have a problem";
+                    }
                 }
 
             protected:
