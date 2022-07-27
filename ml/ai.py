@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 import pickle
 
 filename = 'finalized_model.sav'
@@ -21,7 +21,7 @@ def createAndTrain():
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
 
-    model = SVC(kernel = 'rbf', random_state = 0, gamma=0.1)
+    model = DecisionTreeClassifier(criterion = 'entropy', random_state = 0)
     clf = model.fit(X_train, y_train)
 
     print(model.predict(sc.transform([[57,125]])))
