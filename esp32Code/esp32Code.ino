@@ -158,6 +158,7 @@ void reconnect()
         {
             Serial.println("connected");
             // Subscribe to the topics
+            client.subscribe("esp32/automaticMode");
             client.subscribe("esp32/valve");
             client.subscribe("esp32/shutter");
             client.subscribe("esp32/fan_cold");
@@ -184,6 +185,15 @@ void callback(char* topic, byte* message, unsigned int length)
         messageTemp += (char)message[i];
     }
     Serial.println();
+
+    if (String(topic) == "esp32/automaticMode") {
+        if (messageTemp == "true")
+            automaticMode = true;
+        else
+            automaticMode = false;
+    }
+    if (automaticMode == true)
+        return;
     // check if it is from a valid topic and execute the valid actions
     if (String(topic) == "esp32/valve")
     {
@@ -235,9 +245,9 @@ void binaryDevicesControl(String device, String state)
     {
         Serial.println("Check");
         if (state == "true")
-            transmit("_OV");
+            transmit("OV");
         else
-            transmit("_CV");
+            transmit("CV");
     }
     unsigned int led;
     // fan
@@ -271,7 +281,7 @@ void binaryDevicesControl(String device, String state)
 }
 #pragma endregion Wifi - NodeRed communication
 
-#pragma region Custom Sensors
+#pragma region DIY Sensors
 // TODO: Water Level Detection
 /*
     # below 25%
@@ -293,12 +303,15 @@ double getWaterLevel()
 
 void waterLevelCheck()
 {
+    if (isDefaultValue(humidity, false, hum))
+        return;
+
     double capacity = getWaterLevel();
     //    Serial.println(capacity);
     if (capacity < 0.25 * maxWaterTankCapacity and isFillingTank == false)
     {
         // requests buzzer beeping
-        transmit("_BZ");
+        transmit("BZ");
         Serial.println("Buzzer Beeping!");
         // Filling Tank
         Serial.println("Filling Tank!");
@@ -308,12 +321,14 @@ void waterLevelCheck()
     if (capacity >= maxWaterTankCapacity and isFillingTank == true) {
 
         // stop buzzer
-        transmit("_BZ");
+        transmit("BZ");
         Serial.println("Buzzer stops!");
         Serial.println("Tank Full!");
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         isFillingTank = false;
     }
+    resetValues();
+
 }
 
 // TODO: Soil Moisture Detection
@@ -346,7 +361,7 @@ void soilMoistureCheck()
     if (moisture < 40 and isIrrigating == false)
     {
         // open water tank valve
-        transmit("_OV");
+        transmit("OV");
         Serial.println("Valve Open!");
         // irrigation
         Serial.println("Irrigation Started!");
@@ -354,7 +369,7 @@ void soilMoistureCheck()
         isIrrigating = true;
     }
     if (isIrrigating == true and moisture >= 70) {
-        transmit("_CV");
+        transmit("CV");
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         Serial.println("Valve Closed!");
         Serial.println("Irrigation Stopped!");
@@ -687,10 +702,12 @@ void loop()
         reconnect();
     }
     client.loop();
-    bluetoothReceive();
-    // requestTemperature();
-    humiditySystem();
-    //    waterLevelCheck();
-    //    soilMoistureCheck();
+    if (automaticMode) {
+        bluetoothReceive();
+        requestTemperature();
+        humiditySystem();
+        waterLevelCheck();
+        //    soilMoistureCheck();
+    }
 }
 #pragma endregion region Setup and Loop

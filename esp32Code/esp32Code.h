@@ -74,6 +74,7 @@ unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
 bool isFillingTank = false;
 bool isIrrigating = false;
+bool automaticMode = false;
 unsigned int doesCooling = 0;
 unsigned int doesHeating = 0;
 char shutterState = 'O';

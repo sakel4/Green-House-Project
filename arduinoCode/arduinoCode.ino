@@ -28,20 +28,30 @@ void receive()
         String message = bluetooth.readString();
         Serial.println(message);
         callAction(message);
-        receive();
     }
 }
 
 void callAction(String message)
 {
+    int index = 0;
     message.trim();
-    char firstLetter = message.charAt(0);
+    Serial.println(message);
+
+    char ch = message.charAt(0);
+    Serial.println(ch);
+    Serial.println(ch == '_');
+    if (ch == '_')
+        index = 1;
+    char firstLetter = message.charAt(index);
+    Serial.println(firstLetter);
     if (firstLetter == 'B' or firstLetter == 'O' or firstLetter == 'C' or firstLetter == 'I')
     {
-        char secondLetter = message.charAt(1);
+        char secondLetter = message.charAt(index + 1);
+        Serial.println(secondLetter);
         switch (secondLetter)
         {
         case 'Z':
+            Serial.println("buzzer");
             buzzer();
             break;
         case 'V':
@@ -86,6 +96,7 @@ void buzzer()
             message = bluetooth.readString();
             message.trim();
             if (message.compareTo("_BZ") != 0) {
+                Serial.println("kappa");
                 callAction(message);
             }
         }
@@ -96,11 +107,15 @@ void valveActuator(char command)
 {
     if (command == 'O')
     {
+        Serial.println("open");
         waterValve.write(180);
+        delay(100);
     }
     else if (command == 'C')
     {
+        Serial.println("closed");
         waterValve.write(90);
+        delay(100);
     }
     else
         return;
