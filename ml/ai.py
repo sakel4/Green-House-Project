@@ -38,8 +38,8 @@ def loadModelAndPredict():
 def loadModelAndConvertToC():
     loaded_model = pickle.load(open(filename, 'rb'))
     classmap={
-        0: 'Full',
-        1: 'Partial',
+        0: 'Partial',
+        1: 'Full',
     }
     c_code = port(loaded_model,classmap=classmap)
     print(c_code)

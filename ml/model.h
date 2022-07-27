@@ -57,9 +57,9 @@ namespace Eloquent
                     switch (classIdx)
                     {
                     case 0:
-                        return "Full";
-                    case 1:
                         return "Partial";
+                    case 1:
+                        return "Full";
                     default:
                         return "Houston we have a problem";
                     }
