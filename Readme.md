@@ -38,3 +38,4 @@
 > ## External Libraries
 
 1. ESP32 SoftwareSerial
+   - [Arduino Documentation](https://www.arduino.cc/reference/en/libraries/espsoftwareserial/)

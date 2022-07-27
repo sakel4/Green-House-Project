@@ -1,5 +1,20 @@
 #include "esp32Code.h"
 
+#pragma region General use Functions
+bool isLate(unsigned int timestamp) {
+    return (millis() > timestamp + timeOut) ? true : false;
+}
+
+bool isDefaultValue(unsigned int value, bool isFullCheck, requestType type) {
+    unsigned int request = (type == temp) ? tempRequestCnt : humidityRequestCnt;
+    unsigned int numOfRequests = (type == temp) ? numOfTempRequests : numOfHumidityRequests;
+    if (isFullCheck)
+        return (value == defaultValue and request != numOfRequests) ? true : false;
+    else
+        return (value == defaultValue) ? true : false;
+}
+#pragma endregion General use Functions
+
 #pragma region Shutter system
 // TODO: Detect shutter state - position
 void detectShutterPosition()
@@ -38,6 +53,7 @@ void transmit(String message)
     Serial.println("Outgoing message");
     Serial.println(message);
     bluetooth.println(message);
+    delay(1000);
 }
 
 void bluetoothReceive()
@@ -159,6 +175,9 @@ void callback(char* topic, byte* message, unsigned int length)
     // check if it is from a valid topic and execute the valid actions
     if (String(topic) == "esp32/valve")
     {
+        Serial.println("Check");
+        Serial.println(String(topic));
+        Serial.println(messageTemp);
         if (messageTemp == "true" or messageTemp == "false")
             binaryDevicesControl("valve", messageTemp);
         else
@@ -202,6 +221,7 @@ void binaryDevicesControl(String device, String state)
     // valve
     if (device == "valve")
     {
+        Serial.println("Check");
         if (state == "true")
             transmit("_OV");
         else
@@ -377,27 +397,55 @@ void soilMoistureCheck()
     - Green Led ON (until 25C)
 */
 
-void regulateTemperature()
+void requestTemperature()
 {
     // request values
-    if (temperatureIn == 9999)
+    //tempIn
+    if (isDefaultValue(temperatureIn, true, temp)) {
+        tempRequestCnt++;
         transmit("IT");
-    if (temperatureOut == 9999)
+        lastTempRequest = millis();
+    }
+    else if (isLate(lastTempRequest) and isDefaultValue(temperatureIn, false, temp))
+        tempRequestCnt--;
+
+    //tempOut
+    if (isDefaultValue(temperatureOut, true, temp)) {
+        tempRequestCnt++;
         transmit("OT");
-    if (lightIn == 9999)
+        lastTempRequest = millis();
+    }
+    else if (isLate(lastTempRequest) and isDefaultValue(temperatureOut, false, temp))
+        tempRequestCnt--;
+
+    // LightIn
+    if (isDefaultValue(lightIn, true, temp)) {
+        tempRequestCnt++;
         transmit("IL");
-    if (lightOut == 9999)
+        lastTempRequest = millis();
+    }
+    else if (isLate(lastTempRequest) and isDefaultValue(lightIn, false, temp))
+        tempRequestCnt--;
+
+    //LightOut
+    if (isDefaultValue(lightOut, true, temp)) {
+        tempRequestCnt++;
         transmit("OL");
+        lastTempRequest = millis();
+    }
+    else if (isLate(lastTempRequest) and isDefaultValue(lightOut, false, temp))
+        tempRequestCnt--;
 
     // exit if any of the value has not been received 
-    if (lightIn == 9999 or lightOut == 9999 or temperatureOut == 9999 or temperatureIn == 9999)
+    if (isDefaultValue(lightIn, false, temp) or
+        isDefaultValue(lightOut, false, temp) or
+        isDefaultValue(temperatureOut, false, temp) or
+        isDefaultValue(temperatureIn, false, temp))
         return;
-
+    Serial.println("Got all values");
     //    if (temperatureOut >= 22 and temperatureOut <= 31)
     if (temperatureOut >= 22 and temperatureOut <= 31)
-    {
         checkShutterState();
-    }
     else
     {
         // close shutter - activate air-conditioning
@@ -411,6 +459,7 @@ void regulateTemperature()
     temperatureOut = 9999;
     lightIn = 9999;
     lightOut = 9999;
+    tempRequestCnt = 0;
 }
 
 void airConditioning()
@@ -543,11 +592,16 @@ void checkShutterState()
 
 void humiditySystem()
 {
-    if (humidity == 9999)
-    {
+    if (isDefaultValue(humidity, true, hum)) {
+        humidityRequestCnt++;
         transmit("IH");
-        return;
+        lastHumidityRequest = millis();
     }
+    else if (isLate(lastHumidityRequest) and isDefaultValue(humidity, false, hum))
+        humidityRequestCnt--;
+
+    if (isDefaultValue(humidity, false, hum))
+        return;
 
     if (humidity < 50)
     {
@@ -599,6 +653,7 @@ void humiditySystem()
 #pragma endregion Humidity
 
 #pragma region Setup and Loop
+
 void setup()
 {
     Serial.println("Setup");
@@ -638,7 +693,7 @@ void loop()
     }
     client.loop();
     bluetoothReceive();
-    regulateTemperature();
+    requestTemperature();
     humiditySystem();
     //    waterLevelCheck();
     //    soilMoistureCheck();
