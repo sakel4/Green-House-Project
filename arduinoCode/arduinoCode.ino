@@ -83,6 +83,9 @@ void buzzer()
         {
             message = bluetooth.readString();
             message.trim();
+            if (message.compareTo("_BZ") != 0) {
+                callAction(message);
+            }
         }
     } while (message.compareTo("_BZ") != 0);
 }

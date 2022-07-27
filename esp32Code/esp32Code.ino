@@ -44,15 +44,20 @@ void bluetoothReceive()
 {
     if (bluetooth.available())
     {
+        //receive message
         String message = bluetooth.readString();
         Serial.println(message);
         String type = (message.substring(0, 2));
-        if (type.charAt(0) == 'O' or type.charAt(0) == 'C' or type.charAt(0) == 'I')
+        //check if the first character is valid
+        if (type.charAt(0) == 'O' or type.charAt(0) == 'I')
         {
+            //get end convert the value to float
             float value = (message.substring(3)).toFloat();
             message = message.substring(3);
+            // validate if the value is number 
             if (message != "0" and value == 0)
                 return;
+            //check if the second character is valid
             switch (type.charAt(1))
             {
             case 'L':
@@ -125,6 +130,7 @@ void reconnect()
         {
             Serial.println("connected");
             // Subscribe to the topics
+            client.subscribe("esp32/valve");
             client.subscribe("esp32/shutter");
             client.subscribe("esp32/fan_cold");
             client.subscribe("esp32/fan_hot");
@@ -142,6 +148,7 @@ void reconnect()
 
 void callback(char* topic, byte* message, unsigned int length)
 {
+    //Print that received message
     String messageTemp;
     for (int i = 0; i < length; i++)
     {
@@ -149,6 +156,7 @@ void callback(char* topic, byte* message, unsigned int length)
         messageTemp += (char)message[i];
     }
     Serial.println();
+    // check if it is from a valid topic and execute the valid actions
     if (String(topic) == "esp32/valve")
     {
         if (messageTemp == "true" or messageTemp == "false")
@@ -371,10 +379,7 @@ void soilMoistureCheck()
 
 void regulateTemperature()
 {
-    // transmit("IT");
-    // transmit("OT");
-    // transmit("IL");
-    // transmit("OL");
+    // request values
     if (temperatureIn == 9999)
         transmit("IT");
     if (temperatureOut == 9999)
@@ -384,6 +389,7 @@ void regulateTemperature()
     if (lightOut == 9999)
         transmit("OL");
 
+    // exit if any of the value has not been received 
     if (lightIn == 9999 or lightOut == 9999 or temperatureOut == 9999 or temperatureIn == 9999)
         return;
 
@@ -399,6 +405,8 @@ void regulateTemperature()
         Serial.println("AC");
         airConditioning();
     }
+
+    // reset values to default
     temperatureIn = 9999;
     temperatureOut = 9999;
     lightIn = 9999;
@@ -407,7 +415,6 @@ void regulateTemperature()
 
 void airConditioning()
 {
-
     //    if (temperatureIn < 23)
     if (temperatureIn < 23)
     {
@@ -544,7 +551,6 @@ void humiditySystem()
 
     if (humidity < 50)
     {
-
         // humidification
         digitalWrite(yellowLedPin, HIGH);
         Serial.println("Start Humidification");
@@ -587,7 +593,7 @@ void humiditySystem()
             digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
-
+    //reset humidity value to default
     humidity = 9999;
 }
 #pragma endregion Humidity
