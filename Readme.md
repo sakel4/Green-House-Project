@@ -7,31 +7,33 @@
 
 ### **ESP32 Sensors pins**
 
--   Bluetooth HC-05
+- [**Bluetooth HC-05**](./documentation//esp32/connections/bluetooth.md)
 
-    | Sensor Pin | Microcontroller Pin |
-    | ---------- | ------------------- |
-    | EN         | Not Connected       |
-    | VCC        | 3.3V                |
-    | GND        | GND                 |
-    | TXD        | Board Pin           |
-    | RXD        | Board Pin           |
-    | State      | Not Connected       |
+- [**L298N (For DC Motor)**](./documentation/esp32/connections/l298n.md)
+
+- [**Driver 28byj-48 (For Stepper Motor)**](./documentation/esp32/connections/d28byj-48.md)
+
+- [**LEDs**](./documentation/esp32/connections/leds.md)
+
+- [**DIY Water Level Capacitive Sensor**](./documentation/esp32/connections/waterLevel.md)
+
+- [**DIY Soil Moisture Capacitive Sensor**](./documentation/esp32/connections/soilMoisture.md)
+
+- [**Touch Sensors**](./documentation/esp32/connections/touchSensors.md)
 
 ### **Arduino Sensors pins**
 
--   Bluetooth HC-05
+- [**Bluetooth HC-05**](./documentation/arduino/connections/bluetooth.md)
 
-    | Sensor Pin | Microcontroller Pin |
-    | ---------- | ------------------- |
-    | EN         | Not Connected       |
-    | VCC        | 3.3V                |
-    | GND        | GND                 |
-    | TXD        | Board Pin           |
-    | RXD\*      | Board Pin           |
-    | State      | Not Connected       |
+- [**Servo**](./documentation/arduino/connections/servo.md)
 
-    \*RXD is also connected with D2 interrupt pin
+- [**DHT 11**](./documentation/arduino/connections/dht11.md)
+
+- [**LDRs**](./documentation/arduino/connections/ldrs.md)
+
+- [**LM35**](./documentation/arduino/connections/lm35.md)
+
+- [**Buzzer**](./documentation/arduino/connections/buzzer.md)
 
 > ## External Libraries
 
