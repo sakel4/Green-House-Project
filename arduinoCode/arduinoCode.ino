@@ -1,32 +1,6 @@
 #include "arduinoCode.h"
 
-
-void setup()
-{
-    // initialize serial
-    Serial.begin(9600);
-    // start DHT-11
-    dht.begin();
-    // Bluetooth setup
-    bluetooth.begin(38400);
-    // buzzer setup
-    pinMode(buzzerPin, OUTPUT);
-    // servo setup
-    waterValve.attach(waterValvePin);
-    // interrupt
-    // Setup interrupt pin to trigger interrupt on pullup.
-    pinMode(interruptPin, INPUT_PULLUP);
-    // delay for sensors initialization
-    delay(2000);
-}
-
-void loop()
-{
-    sleepBoard();
-    delay(2000);
-    receive();
-}
-
+#pragma region Sleep related functions
 void wakeUp()
 {
     sleep_disable();
@@ -42,7 +16,9 @@ void sleepBoard()
     delay(100);
     sleep_cpu();
 }
+#pragma endregion Sleep related functions
 
+#pragma region Bluetooth communication functions
 void receive()
 {
     Serial.println("wakkk");
@@ -89,6 +65,9 @@ void transmit(String message)
 {
     bluetooth.println(message);
 }
+#pragma endregion Bluetooth communication functions
+
+#pragma region Sensors-Actuators functions
 // TODO: make buzzer beeping periodically
 void buzzer()
 {
@@ -121,6 +100,7 @@ void valveActuator(char command)
     else
         return;
 }
+
 void lightSensor(char command)
 {
     int lightLevel = 0;
@@ -139,6 +119,7 @@ void lightSensor(char command)
     else
         return;
 }
+
 void temperatureSensor(char command)
 {
     float temperature = 0;
@@ -161,9 +142,39 @@ void temperatureSensor(char command)
         return;
     }
 }
+
 void humiditySensor()
 {
     int humidity = dht.readHumidity();
     String msg = "IH_" + String(humidity);
     transmit(msg);
 }
+#pragma endregion Sensors-Actuators functions
+
+#pragma region Setup and loop
+void setup()
+{
+    // initialize serial
+    Serial.begin(9600);
+    // start DHT-11
+    dht.begin();
+    // Bluetooth setup
+    bluetooth.begin(38400);
+    // buzzer setup
+    pinMode(buzzerPin, OUTPUT);
+    // servo setup
+    waterValve.attach(waterValvePin);
+    // interrupt
+    // Setup interrupt pin to trigger interrupt on pullup.
+    pinMode(interruptPin, INPUT_PULLUP);
+    // delay for sensors initialization
+    delay(2000);
+}
+
+void loop()
+{
+    sleepBoard();
+    delay(2000);
+    receive();
+}
+#pragma endregion Setup and loop

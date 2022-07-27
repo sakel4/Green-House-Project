@@ -1,49 +1,6 @@
 #include "esp32Code.h"
 
-void setup()
-{
-    Serial.println("Setup");
-    // initialize serial
-    Serial.begin(9600);
-    // Bluetooth setup
-    bluetooth.begin(38400);
-    // Wifi
-    setup_wifi();
-    client.setServer(mQtt_server, mQtt_brokerPort);
-    client.setCallback(callback);
-    // Led pin setup
-    pinMode(redLedPin, OUTPUT);
-    pinMode(yellowLedPin, OUTPUT);
-    pinMode(greenLedPin, OUTPUT);
-    pinMode(aiLedPin, OUTPUT);
-    // dc motor setup
-    pinMode(dcMotorPinIn1, OUTPUT);
-    pinMode(dcMotorPinIn2, OUTPUT);
-    pinMode(dcMotorPinEN, OUTPUT);
-    // configure PWM functionalities
-    ledcSetup(pwmChannel, freq, resolution);
-    // attach the channel to the GPIO to be controlled
-    ledcAttachPin(dcMotorPinEN, pwmChannel);
-    // detect shutter position
-    detectShutterPosition();
-    delay(2000);
-    Serial.println("Green House Setup Completed");
-    Serial.flush();
-}
-
-void loop()
-{
-    if (!client.connected())
-    {
-        reconnect();
-    }
-    client.loop();
-    bluetoothReceive();
-    regulateTemperature();
-    humiditySystem();
-    //    waterLevelCheck();
-    //    soilMoistureCheck();
-}
+#pragma region Shutter system
 // TODO: Detect shutter state - position
 void detectShutterPosition()
 {
@@ -55,7 +12,9 @@ void detectShutterPosition()
     else
         shutterState = 'O';
 }
+#pragma endregion Shutter system
 
+#pragma region DC Motor Movement
 void triggerDC()
 {
     digitalWrite(dcMotorPinIn1, HIGH);
@@ -69,7 +28,9 @@ void disableDC()
     digitalWrite(dcMotorPinIn1, LOW);
     digitalWrite(dcMotorPinIn2, LOW);
 }
+#pragma endregion DC Motor Movement
 
+#pragma region Bluetooth Communication
 // TODO: Request Metrics from Slave(Arduino)
 void transmit(String message)
 {
@@ -128,7 +89,9 @@ void bluetoothReceive()
         }
     }
 }
+#pragma endregion Bluetooth Communication
 
+#pragma region Wifi - NodeRed communication
 // Wifi setup
 void setup_wifi()
 {
@@ -177,7 +140,7 @@ void reconnect()
     }
 }
 
-void callback(char *topic, byte *message, unsigned int length)
+void callback(char* topic, byte* message, unsigned int length)
 {
     String messageTemp;
     for (int i = 0; i < length; i++)
@@ -266,6 +229,9 @@ void binaryDevicesControl(String device, String state)
 
     return;
 }
+#pragma endregion Wifi - NodeRed communication
+
+#pragma region Custom Sensors
 // TODO: Water Level Detection
 /*
     # below 25%
@@ -369,7 +335,9 @@ void soilMoistureCheck()
 
     return;
 }
+#pragma endregion Custom Sensors
 
+#pragma region Light and temperature control
 // TODO: Temperature System
 /*
 
@@ -556,7 +524,9 @@ void checkShutterState()
         changeShutterState('C');
     }
 }
+#pragma endregion Light and temperature control
 
+#pragma region Humidity
 // TODO: Humidification System (DC Motor)
 /*
     # Outside 50% - 70%
@@ -620,5 +590,51 @@ void humiditySystem()
 
     humidity = 9999;
 }
+#pragma endregion Humidity
 
-// TODO: Server Communication (Node red)
+#pragma region Setup and Loop
+void setup()
+{
+    Serial.println("Setup");
+    // initialize serial
+    Serial.begin(9600);
+    // Bluetooth setup
+    bluetooth.begin(38400);
+    // Wifi
+    setup_wifi();
+    client.setServer(mQtt_server, mQtt_brokerPort);
+    client.setCallback(callback);
+    // Led pin setup
+    pinMode(redLedPin, OUTPUT);
+    pinMode(yellowLedPin, OUTPUT);
+    pinMode(greenLedPin, OUTPUT);
+    pinMode(aiLedPin, OUTPUT);
+    // dc motor setup
+    pinMode(dcMotorPinIn1, OUTPUT);
+    pinMode(dcMotorPinIn2, OUTPUT);
+    pinMode(dcMotorPinEN, OUTPUT);
+    // configure PWM functionalities
+    ledcSetup(pwmChannel, freq, resolution);
+    // attach the channel to the GPIO to be controlled
+    ledcAttachPin(dcMotorPinEN, pwmChannel);
+    // detect shutter position
+    detectShutterPosition();
+    delay(2000);
+    Serial.println("Green House Setup Completed");
+    Serial.flush();
+}
+
+void loop()
+{
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
+    bluetoothReceive();
+    regulateTemperature();
+    humiditySystem();
+    //    waterLevelCheck();
+    //    soilMoistureCheck();
+}
+#pragma endregion region Setup and Loop
