@@ -2,10 +2,7 @@ import numpy as np
 from glob import glob
 from os.path import basename
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
-
 from micromlgen import port
-from sklearn.naive_bayes import GaussianNB
 
 def load_features():
     dataset = None
