@@ -389,8 +389,8 @@ void waterLevelCheck()
 
     double capacity = getWaterLevel();
     Serial.println(capacity);
-    if (isFillingTank)
-        if (capacity < 0.25 * maxWaterTankCapacity and isFillingTank == false)
+    if (!isFillingTank)
+        if (capacity < 0.25 * maxWaterTankCapacity)
         {
             // requests buzzer beeping
             transmit("BZ");

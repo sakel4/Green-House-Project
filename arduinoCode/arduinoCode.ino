@@ -52,6 +52,10 @@ void callAction(String message)
         {
         case 'Z':
             Serial.println("buzzer");
+            if (buzzerState == 1) {
+                buzzerState = 0;
+                break;
+            }
             buzzer();
             break;
         case 'V':
@@ -83,6 +87,7 @@ void transmit(String message)
 // TODO: make buzzer beeping periodically
 void buzzer()
 {
+    buzzerState = 1;
     String message = "";
     do
     {
@@ -95,16 +100,12 @@ void buzzer()
         {
             message = bluetooth.readString();
             message.trim();
-            if (message.compareTo("_BZ") != 0) {
-                Serial.println("kappa");
-                callAction(message);
-            }
-            else {
-                Serial.println("Exit");
-            }
+            Serial.print("Message after trim: ");
+            Serial.println(message);
+            callAction(message);
         }
-    } while (message.compareTo("_BZ") != 0);
-    notTone(buzzerPin);
+    } while (buzzerState != 0);
+    noTone(buzzerPin);
 }
 
 void valveActuator(char command)
