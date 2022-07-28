@@ -1064,7 +1064,7 @@
                 "t": "set",
                 "p": "fields.state",
                 "pt": "msg",
-                "to": "position",
+                "to": "state",
                 "tot": "msg"
             },
             {
