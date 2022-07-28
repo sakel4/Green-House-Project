@@ -28,7 +28,6 @@ void resetValues() {
 #pragma endregion General use Functions
 
 #pragma region Shutter system
-// TODO: Detect shutter state - position
 void detectShutterPosition()
 {
 
@@ -38,6 +37,90 @@ void detectShutterPosition()
         shutterState = 'M';
     else
         shutterState = 'O';
+}
+
+void moveShutter(int direction, unsigned int sensorPin)
+{
+    unsigned int step;
+    unsigned int touched = 0;
+    if (direction > 0)
+        step = stepsPerRevolution;
+    else
+        step = -stepsPerRevolution;
+    do
+    {
+        // CW movement
+        stepper.setSpeed(10);
+        stepper.step(step);
+        delay(800);
+        touched = touchRead(sensorPin);
+        Serial.println(touched);
+    } while (touched > 20);
+}
+
+void changeShutterState(char state)
+{
+    unsigned int touched = 0;
+    if (state == 'C')
+    {
+        touched = touchRead(endTouchSensorPin);
+        if (shutterState == 'C' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_End");
+        Serial.println("Moving_to_the_End");
+        moveShutter(1, endTouchSensorPin);
+        shutterState = 'C';
+        sendToSubject("esp32/events", "Still_at_End");
+    }
+    else if (state == 'O')
+    {
+        touched = touchRead(startTouchSensorPin);
+        if (shutterState == 'O' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_Start");
+        Serial.println("Moving_to_the_Start");
+        moveShutter(-1, startTouchSensorPin);
+        sendToSubject("esp32/events", "Still_at_Start");
+        shutterState = 'O';
+    }
+    else if (state == 'M')
+    {
+        touched = touchRead(middleTouchSensorPin);
+        if (shutterState == 'M' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_Middle");
+        Serial.println("Moving_to_the_Middle");
+        if (shutterState == 'C')
+            moveShutter(-1, middleTouchSensorPin);
+        else
+            moveShutter(1, middleTouchSensorPin);
+        sendToSubject("esp32/events", "Still_at_Middle");
+        shutterState = 'M';
+    }
+}
+
+void checkShutterState()
+{
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    if (temperatureIn >= (temperatureOut + 1))
+    {
+        Serial.println("Open Shutter");
+        // AI decides the state (Middle or Fully Open)
+        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        features[0] = float(lightIn);
+        features[1] = float(lightOut);
+        String state = model.predictLabel(features);
+        Serial.println(state);
+        if (state == "full")
+            changeShutterState('O');
+        else
+            changeShutterState('M');
+    }
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    else if (temperatureIn <= (temperatureOut - 1)) {
+        Serial.println("Close Shutter");
+        changeShutterState('C');
+    }
 }
 #pragma endregion Shutter system
 
@@ -58,7 +141,6 @@ void disableDC()
 #pragma endregion DC Motor Movement
 
 #pragma region Bluetooth Communication
-// TODO: Request Metrics from Slave(Arduino)
 void transmit(String message)
 {
     message = "_" + message;
@@ -125,7 +207,6 @@ void bluetoothReceive()
 #pragma endregion Bluetooth Communication
 
 #pragma region Wifi - NodeRed communication
-// Wifi setup
 void setup_wifi()
 {
     delay(10);
@@ -307,17 +388,18 @@ void waterLevelCheck()
         return;
 
     double capacity = getWaterLevel();
-    //    Serial.println(capacity);
-    if (capacity < 0.25 * maxWaterTankCapacity and isFillingTank == false)
-    {
-        // requests buzzer beeping
-        transmit("BZ");
-        Serial.println("Buzzer Beeping!");
-        // Filling Tank
-        Serial.println("Filling Tank!");
-        sendToSubject("esp32/events", "Tank_Filling");
-        isFillingTank = true;
-    }
+    Serial.println(capacity);
+    if (isFillingTank)
+        if (capacity < 0.25 * maxWaterTankCapacity and isFillingTank == false)
+        {
+            // requests buzzer beeping
+            transmit("BZ");
+            Serial.println("Buzzer Beeping!");
+            // Filling Tank
+            Serial.println("Filling Tank!");
+            sendToSubject("esp32/events", "Tank_Filling");
+            isFillingTank = true;
+        }
     if (capacity >= maxWaterTankCapacity and isFillingTank == true) {
 
         // stop buzzer
@@ -422,36 +504,36 @@ void requestTemperature()
     if (isDefaultValue(temperatureIn, true, temp)) {
         tempRequestCnt++;
         transmit("IT");
-        lastTempRequest = millis();
+        lastRequest = millis();
     }
-    else if (isLate(lastTempRequest) and isDefaultValue(temperatureIn, false, temp))
+    else if (isLate(lastRequest) and isDefaultValue(temperatureIn, false, temp))
         tempRequestCnt--;
 
     //tempOut
     if (isDefaultValue(temperatureOut, true, temp)) {
         tempRequestCnt++;
         transmit("OT");
-        lastTempRequest = millis();
+        lastRequest = millis();
     }
-    else if (isLate(lastTempRequest) and isDefaultValue(temperatureOut, false, temp))
+    else if (isLate(lastRequest) and isDefaultValue(temperatureOut, false, temp))
         tempRequestCnt--;
 
     // LightIn
     if (isDefaultValue(lightIn, true, temp)) {
         tempRequestCnt++;
         transmit("IL");
-        lastTempRequest = millis();
+        lastRequest = millis();
     }
-    else if (isLate(lastTempRequest) and isDefaultValue(lightIn, false, temp))
+    else if (isLate(lastRequest) and isDefaultValue(lightIn, false, temp))
         tempRequestCnt--;
 
     //LightOut
     if (isDefaultValue(lightOut, true, temp)) {
         tempRequestCnt++;
         transmit("OL");
-        lastTempRequest = millis();
+        lastRequest = millis();
     }
-    else if (isLate(lastTempRequest) and isDefaultValue(lightOut, false, temp))
+    else if (isLate(lastRequest) and isDefaultValue(lightOut, false, temp))
         tempRequestCnt--;
 
     // exit if any of the value has not been received 
@@ -516,81 +598,6 @@ void airConditioning()
     }
 }
 
-void moveShutter(int direction, unsigned int sensorPin)
-{
-    unsigned int step;
-    unsigned int touched = 0;
-    if (direction > 0)
-        step = stepsPerRevolution;
-    else
-        step = -stepsPerRevolution;
-    do
-    {
-        // CW movement
-        stepper.setSpeed(10);
-        stepper.step(step);
-        delay(800);
-        touched = touchRead(sensorPin);
-        Serial.println(touched);
-    } while (touched > 20);
-}
-
-void changeShutterState(char state)
-{
-    unsigned int touched = 0;
-    if (state == 'C')
-    {
-        touched = touchRead(endTouchSensorPin);
-        if (shutterState == 'C' or touched < 20)
-            return;
-        sendToSubject("esp32/events", "Moving_to_the_End");
-        Serial.println("Moving_to_the_End");
-        moveShutter(1, endTouchSensorPin);
-        shutterState = 'C';
-        sendToSubject("esp32/events", "Still_at_End");
-    }
-    else if (state == 'O')
-    {
-        touched = touchRead(startTouchSensorPin);
-        if (shutterState == 'O' or touched < 20)
-            return;
-        sendToSubject("esp32/events", "Moving_to_the_Start");
-        Serial.println("Moving_to_the_Start");
-        moveShutter(-1, startTouchSensorPin);
-        sendToSubject("esp32/events", "Still_at_Start");
-        shutterState = 'O';
-    }
-    else if (state == 'M')
-    {
-        touched = touchRead(middleTouchSensorPin);
-        if (shutterState == 'M' or touched < 20)
-            return;
-        sendToSubject("esp32/events", "Moving_to_the_Middle");
-        Serial.println("Moving_to_the_Middle");
-        if (shutterState == 'C')
-            moveShutter(-1, middleTouchSensorPin);
-        else
-            moveShutter(1, middleTouchSensorPin);
-        sendToSubject("esp32/events", "Still_at_Middle");
-        shutterState = 'M';
-    }
-}
-
-void checkShutterState()
-{
-    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    if (temperatureIn >= (temperatureOut + 1))
-    {
-        // TODO: call AI to decide the state (Middle or Fully Open)
-        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
-        changeShutterState('O');
-    }
-    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    else if (temperatureIn <= (temperatureOut - 1))
-    {
-        changeShutterState('C');
-    }
-}
 #pragma endregion Light and temperature control
 
 #pragma region Humidity
@@ -606,9 +613,9 @@ void humiditySystem()
     if (isDefaultValue(humidity, true, hum)) {
         humidityRequestCnt++;
         transmit("IH");
-        lastHumidityRequest = millis();
+        lastRequest = millis();
     }
-    else if (isLate(lastHumidityRequest) and isDefaultValue(humidity, false, hum))
+    else if (isLate(lastRequest) and isDefaultValue(humidity, false, hum))
         humidityRequestCnt--;
 
     if (isDefaultValue(humidity, false, hum))
@@ -658,12 +665,11 @@ void humiditySystem()
             digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
-    resetValues();
+    // resetValues();
 }
 #pragma endregion Humidity
 
-#pragma region Setup and Loop
-
+#pragma region Setup and Loop                                            
 void setup()
 {
     Serial.println("Setup");

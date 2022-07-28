@@ -99,8 +99,12 @@ void buzzer()
                 Serial.println("kappa");
                 callAction(message);
             }
+            else {
+                Serial.println("Exit");
+            }
         }
     } while (message.compareTo("_BZ") != 0);
+    notTone(buzzerPin);
 }
 
 void valveActuator(char command)

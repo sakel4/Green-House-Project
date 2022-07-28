@@ -7,7 +7,7 @@ from micromlgen import port
 def load_features():
     dataset = None
     classmap = {}
-    for class_idx, filename in enumerate(glob('./dataset2/*.csv')):
+    for class_idx, filename in enumerate(glob('./dataset/*.csv')):
         class_name = basename(filename)[:-4]
         classmap[class_idx] = class_name
         samples = np.loadtxt(filename, dtype=float, delimiter=',')

@@ -2,6 +2,7 @@
 #include <PubSubClient.h>
 #include <SoftwareSerial.h>
 #include <Stepper.h>
+#include "model.h"
 
 // Bluetooth
 const unsigned int TXpin = 22;
@@ -55,6 +56,10 @@ const unsigned int pwmChannel = 0;
 unsigned int resolution = 8;
 const unsigned int dutyCycle = 200;
 
+// SVM model
+Eloquent::ML::Port::SVM model;
+float features[2] = { 0 };
+
 // global variables
 enum requestType { temp, hum };
 int defaultValue = 9999;
@@ -68,8 +73,7 @@ unsigned int tempRequestCnt = 0;
 unsigned int humidityRequestCnt = 0;
 unsigned int numOfTempRequests = 4;
 unsigned int numOfHumidityRequests = 1;
-unsigned int lastTempRequest = millis();
-unsigned int lastHumidityRequest = millis();
+unsigned int lastRequest = millis();
 unsigned int doesHumidification = 0;
 unsigned int doesDeHumidification = 0;
 bool isFillingTank = false;
