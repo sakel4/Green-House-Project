@@ -110,7 +110,11 @@ void checkShutterState()
         features[0] = float(lightIn);
         features[1] = float(lightOut);
         String state = model.predictLabel(features);
+        Serial.print("AI classifies: ");
         Serial.println(state);
+        digitalWrite(aiLedPin, HIGH);
+        delay(2000);
+        digitalWrite(aiLedPin, LOW);
         if (state == "full")
             changeShutterState('O');
         else
@@ -409,7 +413,7 @@ void waterLevelCheck()
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         isFillingTank = false;
     }
-    // resetValues();
+     resetValues();
 
 }
 
@@ -439,9 +443,6 @@ double getSoilMoisture()
 
 void soilMoistureCheck()
 {
-    if (isDefaultValue(humidity, false, hum))
-        return;
-
     double moisture = getSoilMoisture();
     if (moisture < 40 and isIrrigating == false)
     {
@@ -461,7 +462,7 @@ void soilMoistureCheck()
         sendToSubject("esp32/events", "No-Irrigation");
         isIrrigating = false;
     }
-    resetValues();
+//    resetValues();
     return;
 }
 #pragma endregion Custom Sensors

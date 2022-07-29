@@ -15,7 +15,7 @@ PubSubClient client(espClient);
 const char* ssid = "NILE";
 const char* password = "n1l3LAB2.4GH";
 // Add your MQtt Broker IP address, example (192.168.31.23):
-const char* mQtt_server = "10.0.22.202";
+const char* mQtt_server = "10.0.22.160";
 const int mQtt_brokerPort = 1883;
 
 // stepper
@@ -33,7 +33,7 @@ const unsigned int redLedPin = 25;
 const unsigned int yellowLedPin = 26;
 const unsigned int greenLedPin = 27;
 // AI led, TODO: Find and connect a led
-const unsigned int aiLedPin = 2;
+const unsigned int aiLedPin = 35;
 
 // Capacitive Sensors
 // TODO: CHECK THE SENSORS AND THE PINS
