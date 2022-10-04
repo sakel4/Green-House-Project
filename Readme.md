@@ -1,4 +1,6 @@
 # **Green House Automation Project**
+> ## **DISCLAIMER**
+> This version of the project has a known bug at the Master loop
 
 > ## Circuit
 >
