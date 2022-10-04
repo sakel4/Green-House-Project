@@ -1,62 +1,6 @@
-#include <DHT.h>
-#include <SoftwareSerial.h>
-#include <avr/sleep.h>
-#include <Servo.h>
+#include "arduinoCode.h"
 
-// Bluetooth
-const unsigned int TXpin = 8;
-const unsigned int RXpin = 9;
-SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
-
-// DHT-11
-const unsigned int dht11pin = 5;
-#define DHTTYPE DHT11
-DHT dht(dht11pin, DHTTYPE);
-
-// LDR
-const unsigned int ldrInPin = A0;
-const unsigned int ldrOutPin = A1;
-
-// LM35
-const unsigned int lm35pin = A2;
-
-// buzzer
-const unsigned int buzzerPin = 6;
-unsigned int buzzerState = 0;
-
-// interrupt
-const unsigned int interruptPin = 2;
-
-// servo motor
-Servo waterValve;
-const unsigned int waterValvePin = 7;
-
-void setup()
-{
-    // initialize serial
-    Serial.begin(9600);
-    // start DHT-11
-    dht.begin();
-    // Bluetooth setup
-    bluetooth.begin(38400);
-    // buzzer setup
-    pinMode(buzzerPin, OUTPUT);
-    // servo setup
-    waterValve.attach(waterValvePin);
-    // interrupt
-    // Setup interrupt pin to trigger interrupt on pullup.
-    pinMode(interruptPin, INPUT_PULLUP);
-    // delay for sensors initialization
-    delay(2000);
-}
-
-void loop()
-{
-    sleepBoard();
-    delay(2000);
-    receive();
-}
-
+#pragma region Sleep related functions
 void wakeUp()
 {
     sleep_disable();
@@ -72,7 +16,9 @@ void sleepBoard()
     delay(100);
     sleep_cpu();
 }
+#pragma endregion Sleep related functions
 
+#pragma region Bluetooth communication functions
 void receive()
 {
     Serial.println("wakkk");
@@ -87,13 +33,29 @@ void receive()
 
 void callAction(String message)
 {
-    char firstLetter = message.charAt(0);
+    int index = 0;
+    message.trim();
+    Serial.println(message);
+
+    char ch = message.charAt(0);
+    Serial.println(ch);
+    Serial.println(ch == '_');
+    if (ch == '_')
+        index = 1;
+    char firstLetter = message.charAt(index);
+    Serial.println(firstLetter);
     if (firstLetter == 'B' or firstLetter == 'O' or firstLetter == 'C' or firstLetter == 'I')
     {
-        char secondLetter = message.charAt(1);
+        char secondLetter = message.charAt(index + 1);
+        Serial.println(secondLetter);
         switch (secondLetter)
         {
         case 'Z':
+            Serial.println("buzzer");
+            if (buzzerState == 1) {
+                buzzerState = 0;
+                break;
+            }
             buzzer();
             break;
         case 'V':
@@ -119,9 +81,13 @@ void transmit(String message)
 {
     bluetooth.println(message);
 }
+#pragma endregion Bluetooth communication functions
+
+#pragma region Sensors-Actuators functions
 // TODO: make buzzer beeping periodically
 void buzzer()
 {
+    buzzerState = 1;
     String message = "";
     do
     {
@@ -134,23 +100,32 @@ void buzzer()
         {
             message = bluetooth.readString();
             message.trim();
+            Serial.print("Message after trim: ");
+            Serial.println(message);
+            callAction(message);
         }
-    } while (message.compareTo("_BZ")!=0);
+    } while (buzzerState != 0);
+    noTone(buzzerPin);
 }
 
 void valveActuator(char command)
 {
     if (command == 'O')
     {
+        Serial.println("open");
         waterValve.write(180);
+        delay(100);
     }
     else if (command == 'C')
     {
+        Serial.println("closed");
         waterValve.write(90);
+        delay(100);
     }
     else
         return;
 }
+
 void lightSensor(char command)
 {
     int lightLevel = 0;
@@ -169,6 +144,7 @@ void lightSensor(char command)
     else
         return;
 }
+
 void temperatureSensor(char command)
 {
     float temperature = 0;
@@ -191,9 +167,39 @@ void temperatureSensor(char command)
         return;
     }
 }
+
 void humiditySensor()
 {
     int humidity = dht.readHumidity();
     String msg = "IH_" + String(humidity);
     transmit(msg);
 }
+#pragma endregion Sensors-Actuators functions
+
+#pragma region Setup and loop
+void setup()
+{
+    // initialize serial
+    Serial.begin(9600);
+    // start DHT-11
+    dht.begin();
+    // Bluetooth setup
+    bluetooth.begin(38400);
+    // buzzer setup
+    pinMode(buzzerPin, OUTPUT);
+    // servo setup
+    waterValve.attach(waterValvePin);
+    // interrupt
+    // Setup interrupt pin to trigger interrupt on pullup.
+    pinMode(interruptPin, INPUT_PULLUP);
+    // delay for sensors initialization
+    delay(2000);
+}
+
+void loop()
+{
+    sleepBoard();
+    delay(2000);
+    receive();
+}
+#pragma endregion Setup and loop

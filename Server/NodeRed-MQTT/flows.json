@@ -439,7 +439,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 930,
-        "y": 2740,
+        "y": 2800,
         "wires": []
     },
     {
@@ -449,7 +449,7 @@
         "name": "",
         "topic": "esp32/fan_hot",
         "qos": "2",
-        "retain": "",
+        "retain": "true",
         "respTopic": "",
         "contentType": "",
         "userProps": "",
@@ -457,7 +457,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 1180,
-        "y": 3120,
+        "y": 3180,
         "wires": []
     },
     {
@@ -472,7 +472,7 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 3120,
+        "y": 3180,
         "wires": [
             [
                 "bf01c47274449929"
@@ -491,7 +491,7 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 3200,
+        "y": 3260,
         "wires": [
             [
                 "1c40e7ee624fad25"
@@ -505,7 +505,7 @@
         "name": "Control Fans",
         "info": "",
         "x": 610,
-        "y": 3040,
+        "y": 3100,
         "wires": []
     },
     {
@@ -514,8 +514,8 @@
         "z": "2413017db2cc8644",
         "name": "",
         "topic": "esp32/shutter",
-        "qos": "",
-        "retain": "",
+        "qos": "2",
+        "retain": "true",
         "respTopic": "",
         "contentType": "",
         "userProps": "",
@@ -523,7 +523,7 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 940,
-        "y": 2960,
+        "y": 3020,
         "wires": []
     },
     {
@@ -533,7 +533,7 @@
         "name": "Control Shutter",
         "info": "",
         "x": 620,
-        "y": 2820,
+        "y": 2880,
         "wires": []
     },
     {
@@ -543,7 +543,7 @@
         "name": "Control Water Valve",
         "info": "",
         "x": 630,
-        "y": 2660,
+        "y": 2720,
         "wires": []
     },
     {
@@ -1064,7 +1064,7 @@
                 "t": "set",
                 "p": "fields.state",
                 "pt": "msg",
-                "to": "position",
+                "to": "state",
                 "tot": "msg"
             },
             {
@@ -1197,6 +1197,40 @@
         "label": "Cold Fan (OFF/ON)",
         "tooltip": "",
         "group": "d8807c8f558ef194",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "state",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 630,
+        "y": 3260,
+        "wires": [
+            [
+                "e2e45424770ee288"
+            ]
+        ]
+    },
+    {
+        "id": "d0559d5603252f22",
+        "type": "ui_switch",
+        "z": "2413017db2cc8644",
+        "name": "",
+        "label": "Hot Fan (OFF/ON)",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
         "order": 2,
         "width": 0,
         "height": 0,
@@ -1216,41 +1250,7 @@
         "animate": false,
         "className": "",
         "x": 630,
-        "y": 3200,
-        "wires": [
-            [
-                "e2e45424770ee288"
-            ]
-        ]
-    },
-    {
-        "id": "d0559d5603252f22",
-        "type": "ui_switch",
-        "z": "2413017db2cc8644",
-        "name": "",
-        "label": "Hot Fan (OFF/ON)",
-        "tooltip": "",
-        "group": "d8807c8f558ef194",
-        "order": 1,
-        "width": 0,
-        "height": 0,
-        "passthru": true,
-        "decouple": "false",
-        "topic": "state",
-        "topicType": "msg",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "onicon": "",
-        "oncolor": "",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "officon": "",
-        "offcolor": "",
-        "animate": false,
-        "className": "",
-        "x": 630,
-        "y": 3120,
+        "y": 3180,
         "wires": [
             [
                 "0e89151489d0ca2e"
@@ -1265,7 +1265,7 @@
         "label": "Water Valve (OFF/ON)",
         "tooltip": "",
         "group": "d8807c8f558ef194",
-        "order": 3,
+        "order": 4,
         "width": 0,
         "height": 0,
         "passthru": true,
@@ -1284,7 +1284,7 @@
         "animate": false,
         "className": "",
         "x": 640,
-        "y": 2740,
+        "y": 2800,
         "wires": [
             [
                 "e6192d4ac49f9feb"
@@ -1300,7 +1300,7 @@
         "order": 12,
         "width": 0,
         "height": 0,
-        "format": "<style>\n.nr-dashboard-cardtitle{\n    text-align: center;\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n}\n.mTitle{\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n    color: #1bbfff;\n}\n\n.temp{\n    background-color: #c3eeff !important;\n}\n\n.light{\n    \n}\n\n.humidity{\n    background-color: #c3eeff !important;\n}\n\n.tank{\n    \n}\n\n.soil{\n    background-color: #c3eeff !important;\n}\n\n</style>",
+        "format": "<style>\n.nr-dashboard-cardtitle{\n    text-align: center;\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n}\n.mTitle{\n    text-decoration: underline;\n    font-size: 30px !important;\n    font-weight: bold !important;\n    color: #1bbfff;\n}\n\n.temp{\n    background-color: #c3eeff !important;\n}\n\n.light{\n    \n}\n\n.humidity{\n    background-color: #c3eeff !important;\n}\n\n.tank{\n    \n}\n\n.soil{\n    background-color: #c3eeff !important;\n}\n\n.mode{\n    background-color: #c3eeff !important;\n}\n</style>",
         "storeOutMessages": true,
         "fwdInMessages": true,
         "resendOnRefresh": true,
@@ -1874,7 +1874,7 @@
         ],
         "topic": "",
         "x": 620,
-        "y": 2960,
+        "y": 3020,
         "wires": [
             [
                 "f8dcf69177447079"
@@ -1895,7 +1895,7 @@
         "layout": "col-center",
         "className": "controlTitle",
         "x": 620,
-        "y": 2900,
+        "y": 2960,
         "wires": []
     },
     {
@@ -1905,7 +1905,7 @@
         "name": "",
         "topic": "esp32/fan_cold",
         "qos": "2",
-        "retain": "",
+        "retain": "true",
         "respTopic": "",
         "contentType": "",
         "userProps": "",
@@ -1913,8 +1913,70 @@
         "expiry": "",
         "broker": "6c38adbc301341f7",
         "x": 1180,
-        "y": 3200,
+        "y": 3260,
         "wires": []
+    },
+    {
+        "id": "5110d3a3bcbe26a5",
+        "type": "mqtt out",
+        "z": "2413017db2cc8644",
+        "name": "",
+        "topic": "esp32/automaticMode",
+        "qos": "2",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6c38adbc301341f7",
+        "x": 960,
+        "y": 2660,
+        "wires": []
+    },
+    {
+        "id": "ccf9d7ff410e0650",
+        "type": "comment",
+        "z": "2413017db2cc8644",
+        "name": "Control Automatic mode",
+        "info": "",
+        "x": 640,
+        "y": 2580,
+        "wires": []
+    },
+    {
+        "id": "86dbecfe09b47b8b",
+        "type": "ui_switch",
+        "z": "2413017db2cc8644",
+        "name": "",
+        "label": "Automatic mode (OFF/ON)",
+        "tooltip": "",
+        "group": "d8807c8f558ef194",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "mode",
+        "x": 660,
+        "y": 2660,
+        "wires": [
+            [
+                "5110d3a3bcbe26a5"
+            ]
+        ]
     },
     {
         "id": "6c38adbc301341f7",

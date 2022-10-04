@@ -1,126 +1,33 @@
-#include <WiFi.h>
-#include <PubSubClient.h>
-#include <SoftwareSerial.h>
-#include <Stepper.h>
+#include "esp32Code.h"
 
-#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 7        /* Time ESP32 will go to sleep (in seconds) */
-
-// Bluetooth
-const unsigned int TXpin = 22;
-const unsigned int RXpin = 23;
-SoftwareSerial bluetooth(TXpin, RXpin); // (TX, RX)
-
-// Wifi
-WiFiClient espClient;
-PubSubClient client(espClient);
-const char *ssid = "NILE";
-const char *password = "n1l3LAB2.4GH";
-// Add your MQtt Broker IP address, example (192.168.31.23):
-const char *mQtt_server = "10.0.22.202";
-const int mQtt_brokerPort = 1883;
-
-// Stepper
-const unsigned int stepperPinIn1 = 5;
-const unsigned int stepperPinIn2 = 19;
-const unsigned int stepperPinIn3 = 18;
-const unsigned int stepperPinIn4 = 21;
-// Defines the number of steps per rotation
-const unsigned int stepsPerRevolution = 2038;
-// Pins entered in sequence IN1-IN3-IN2-IN4 for proper step sequence
-Stepper stepper = Stepper(stepsPerRevolution, stepperPinIn1, stepperPinIn3, stepperPinIn2, stepperPinIn4);
-
-// Led
-const unsigned int redLedPin = 25;
-const unsigned int yellowLedPin = 26;
-const unsigned int greenLedPin = 27;
-// AI led, TODO: Find and connect a led
-const unsigned int aiLedPin = 2;
-
-// Capacitive Sensors
-// TODO: CHECK THE SENSORS AND THE PINS
-// Water Level
-const unsigned int waterLevelSensorPin = 4;
-const unsigned int maxWaterTankCapacity = 450;
-// Soil Moisture
-const unsigned int soilMoistureSensorPin = 33;
-// Touch sensors
-const unsigned int startTouchSensorPin = 12;
-const unsigned int middleTouchSensorPin = 13;
-const unsigned int endTouchSensorPin = 14;
-
-// DC MOTOR
-const unsigned int dcMotorPinIn1 = 2;
-const unsigned int dcMotorPinIn2 = 15;
-const unsigned int dcMotorPinEN = 32;
-const unsigned int freq = 30000;
-const unsigned int pwmChannel = 0;
-const unsigned int resolution = 8;
-const unsigned int dutyCycle = 200;
-
-// global variables
-float metric = 0;
-unsigned int doesHumidification = 0;
-unsigned int doesDeHumidification = 0;
-unsigned int doesCooling = 0;
-unsigned int doesHeating = 0;
-char shutterState = 'O';
-
-void setup()
-{
-    // initialize serial
-    Serial.begin(9600);
-    Serial.println("Setup");
-    // Setup time to sleep
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-    // Bluetooth setup
-    bluetooth.begin(38400);
-    // Wifi
-    setup_wifi();
-    client.setServer(mQtt_server, mQtt_brokerPort);
-    client.setCallback(callback);
-    // Led pin setup
-    pinMode(redLedPin, OUTPUT);
-    pinMode(yellowLedPin, OUTPUT);
-    pinMode(greenLedPin, OUTPUT);
-    pinMode(aiLedPin, OUTPUT);
-    // dc motor setup
-    pinMode(dcMotorPinIn1, OUTPUT);
-    pinMode(dcMotorPinIn2, OUTPUT);
-    pinMode(dcMotorPinEN, OUTPUT);
-    // configure PWM functionalities
-    ledcSetup(pwmChannel, freq, resolution);
-
-    // attach the channel to the GPIO to be controlled
-    ledcAttachPin(dcMotorPinEN, pwmChannel);
-    // detect shutter position
-    detectShutterPosition();
-    delay(2000);
-    if (!client.connected())
-    {
-        reconnect();
-    }
-    client.loop();
-    regulateTemperature();
-    humiditySystem();
-    //    waterLevelCheck();
-    //    soilMoistureCheck();
-    Serial.println("Sleep for 10 seconds");
-    Serial.flush();
-    esp_deep_sleep_start();
+#pragma region General use Functions
+bool isLate(unsigned int timestamp) {
+    return (millis() > timestamp + timeOut) ? true : false;
 }
 
-void loop()
-{
-    //     if (!client.connected())
-    //    {
-    //        reconnect();
-    //    }
-    //    client.loop();
-    //    regulateTemperature();
-    //    humiditySystem();
+bool isDefaultValue(unsigned int value, bool isFullCheck, requestType type) {
+    unsigned int request = (type == temp) ? tempRequestCnt : humidityRequestCnt;
+    unsigned int numOfRequests = (type == temp) ? numOfTempRequests : numOfHumidityRequests;
+    if (isFullCheck)
+        return (value == defaultValue and request != numOfRequests) ? true : false;
+    else
+        return (value == defaultValue) ? true : false;
 }
-// TODO: Detect shutter state - position
+
+void resetValues() {
+    // reset values to default
+    temperatureIn = defaultValue;
+    temperatureOut = defaultValue;
+    lightIn = defaultValue;
+    lightOut = defaultValue;
+    tempRequestCnt = 0;
+    //reset humidity value to default
+    humidity = defaultValue;
+    humidityRequestCnt = 0;
+}
+#pragma endregion General use Functions
+
+#pragma region Shutter system
 void detectShutterPosition()
 {
 
@@ -132,6 +39,96 @@ void detectShutterPosition()
         shutterState = 'O';
 }
 
+void moveShutter(int direction, unsigned int sensorPin)
+{
+    unsigned int step;
+    unsigned int touched = 0;
+    if (direction > 0)
+        step = stepsPerRevolution;
+    else
+        step = -stepsPerRevolution;
+    do
+    {
+        // CW movement
+        stepper.setSpeed(10);
+        stepper.step(step);
+        delay(800);
+        touched = touchRead(sensorPin);
+        Serial.println(touched);
+    } while (touched > 20);
+}
+
+void changeShutterState(char state)
+{
+    unsigned int touched = 0;
+    if (state == 'C')
+    {
+        touched = touchRead(endTouchSensorPin);
+        if (shutterState == 'C' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_End");
+        Serial.println("Moving_to_the_End");
+        moveShutter(1, endTouchSensorPin);
+        shutterState = 'C';
+        sendToSubject("esp32/events", "Still_at_End");
+    }
+    else if (state == 'O')
+    {
+        touched = touchRead(startTouchSensorPin);
+        if (shutterState == 'O' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_Start");
+        Serial.println("Moving_to_the_Start");
+        moveShutter(-1, startTouchSensorPin);
+        sendToSubject("esp32/events", "Still_at_Start");
+        shutterState = 'O';
+    }
+    else if (state == 'M')
+    {
+        touched = touchRead(middleTouchSensorPin);
+        if (shutterState == 'M' or touched < 20)
+            return;
+        sendToSubject("esp32/events", "Moving_to_the_Middle");
+        Serial.println("Moving_to_the_Middle");
+        if (shutterState == 'C')
+            moveShutter(-1, middleTouchSensorPin);
+        else
+            moveShutter(1, middleTouchSensorPin);
+        sendToSubject("esp32/events", "Still_at_Middle");
+        shutterState = 'M';
+    }
+}
+
+void checkShutterState()
+{
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    if (temperatureIn >= (temperatureOut + 1))
+    {
+        Serial.println("Open Shutter");
+        // AI decides the state (Middle or Fully Open)
+        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
+        features[0] = float(lightIn);
+        features[1] = float(lightOut);
+        String state = model.predictLabel(features);
+        Serial.print("AI classifies: ");
+        Serial.println(state);
+        digitalWrite(aiLedPin, HIGH);
+        delay(2000);
+        digitalWrite(aiLedPin, LOW);
+        if (state == "full")
+            changeShutterState('O');
+        else
+            changeShutterState('M');
+    }
+    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
+    else if (temperatureIn <= (temperatureOut - 1)) {
+        Serial.println("Close Shutter");
+        changeShutterState('C');
+    }
+}
+#pragma endregion Shutter system
+
+#pragma region DC Motor Movement
 void triggerDC()
 {
     digitalWrite(dcMotorPinIn1, HIGH);
@@ -145,63 +142,75 @@ void disableDC()
     digitalWrite(dcMotorPinIn1, LOW);
     digitalWrite(dcMotorPinIn2, LOW);
 }
+#pragma endregion DC Motor Movement
 
-// TODO: Request Metrics from Slave(Arduino)
+#pragma region Bluetooth Communication
 void transmit(String message)
 {
+    message = "_" + message;
     Serial.println("Outgoing message");
     Serial.println(message);
     bluetooth.println(message);
+    delay(1000);
 }
 
-void getMetric(String metricType)
+void bluetoothReceive()
 {
-    transmit("_" + metricType);
-    long int messageTime = millis() + 15000;
-    while (true)
+    if (bluetooth.available())
     {
-        if (millis() > messageTime)
+        //receive message
+        String message = bluetooth.readString();
+        Serial.println(message);
+        String type = (message.substring(0, 2));
+        //check if the first character is valid
+        if (type.charAt(0) == 'O' or type.charAt(0) == 'I')
         {
-            Serial.println("Late");
-            getMetric(metricType);
-            break;
-        }
-        if (bluetooth.available())
-        {
-            String message = bluetooth.readString();
-            Serial.println(message);
-            Serial.println(message.substring(0, 2));
-            if (message.substring(0, 2) == metricType)
+            //get end convert the value to float
+            float value = (message.substring(3)).toFloat();
+            message = message.substring(3);
+            // validate if the value is number 
+            if (message != "0" and value == 0)
+                return;
+            //check if the second character is valid
+            switch (type.charAt(1))
             {
-                String stringValue = message.substring(3);
-                float intValue = stringValue.toFloat();
-                if (stringValue != "0" and intValue != 0)
+            case 'L':
+                if (type.charAt(0) == 'I')
                 {
-                    metric = intValue;
-                    break;
+                    lightIn = value;
+                    sendToSubject("esp32/lightIN", message);
                 }
                 else
                 {
-                    // request again
-                    Serial.println("Non integer");
-                    getMetric(metricType);
-                    break;
+                    lightOut = value;
+                    sendToSubject("esp32/lightOUT", message);
                 }
-            }
-            else
-            {
-                // request again
-                Serial.println("Wrong response");
-                getMetric(metricType);
+                break;
+            case 'T':
+                if (type.charAt(0) == 'I')
+                {
+                    temperatureIn = value;
+                    sendToSubject("esp32/temperatureIN", message);
+                }
+                else
+                {
+                    temperatureOut = value;
+                    sendToSubject("esp32/temperatureOUT", message);
+                }
+                break;
+            case 'H':
+                humidity = value;
+                sendToSubject("esp32/humidity", message);
+                break;
+            default:
                 break;
             }
         }
     }
-
-    return;
 }
+#pragma endregion Bluetooth Communication
 
-// Wifi setup
+#pragma region Wifi - NodeRed communication
 void setup_wifi()
 {
     delay(10);
@@ -233,12 +242,8 @@ void reconnect()
         if (client.connect("ESP32_Client"))
         {
             Serial.println("connected");
-            // Subscribe to the subject
-            //            client.subscribe("esp32/temperature");
-            //            client.subscribe("esp32/light");
-            //            client.subscribe("esp32/humidity");
-            //            client.subscribe("esp32/waterLevel");
-            //            client.subscribe("esp32/soilMoisture");
+            // Subscribe to the topics
+            client.subscribe("esp32/automaticMode");
             client.subscribe("esp32/valve");
             client.subscribe("esp32/shutter");
             client.subscribe("esp32/fan_cold");
@@ -255,8 +260,9 @@ void reconnect()
     }
 }
 
-void callback(char *topic, byte *message, unsigned int length)
+void callback(char* topic, byte* message, unsigned int length)
 {
+    //Print that received message
     String messageTemp;
     for (int i = 0; i < length; i++)
     {
@@ -264,8 +270,21 @@ void callback(char *topic, byte *message, unsigned int length)
         messageTemp += (char)message[i];
     }
     Serial.println();
+
+    if (String(topic) == "esp32/automaticMode") {
+        if (messageTemp == "true")
+            automaticMode = true;
+        else
+            automaticMode = false;
+    }
+    if (automaticMode == true)
+        return;
+    // check if it is from a valid topic and execute the valid actions
     if (String(topic) == "esp32/valve")
     {
+        Serial.println("Check");
+        Serial.println(String(topic));
+        Serial.println(messageTemp);
         if (messageTemp == "true" or messageTemp == "false")
             binaryDevicesControl("valve", messageTemp);
         else
@@ -309,10 +328,11 @@ void binaryDevicesControl(String device, String state)
     // valve
     if (device == "valve")
     {
+        Serial.println("Check");
         if (state == "true")
-            transmit("_OV");
+            transmit("OV");
         else
-            transmit("_CV");
+            transmit("CV");
     }
     unsigned int led;
     // fan
@@ -344,6 +364,9 @@ void binaryDevicesControl(String device, String state)
 
     return;
 }
+#pragma endregion Wifi - NodeRed communication
+
+#pragma region DIY Sensors
 // TODO: Water Level Detection
 /*
     # below 25%
@@ -365,34 +388,33 @@ double getWaterLevel()
 
 void waterLevelCheck()
 {
-    double capacity = getWaterLevel();
-    //    Serial.println(capacity);
-    if (capacity < 0.25 * maxWaterTankCapacity)
-    {
-        // requests buzzer beeping
-        transmit("_BZ");
-        Serial.println("Buzzer Beeping!");
-        // Filling Tank
-        Serial.println("Filling Tank!");
-        sendToSubject("esp32/events", "Tank_Filling");
-        while (true)
-        {
-            capacity = getWaterLevel();
-            //            Serial.println(capacity);
-            delay(300);
-            if (capacity >= maxWaterTankCapacity)
-            {
-                // stop buzzer
-                transmit("_BZ");
-                Serial.println("Buzzer stops!");
-                Serial.println("Tank Full!");
-                sendToSubject("esp32/events", "Tank_Stop_Filling");
-                break;
-            }
-        }
-    }
+    if (isDefaultValue(humidity, false, hum))
+        return;
 
-    return;
+    double capacity = getWaterLevel();
+    Serial.println(capacity);
+    if (!isFillingTank)
+        if (capacity < 0.25 * maxWaterTankCapacity)
+        {
+            // requests buzzer beeping
+            transmit("BZ");
+            Serial.println("Buzzer Beeping!");
+            // Filling Tank
+            Serial.println("Filling Tank!");
+            sendToSubject("esp32/events", "Tank_Filling");
+            isFillingTank = true;
+        }
+    if (capacity >= maxWaterTankCapacity and isFillingTank == true) {
+
+        // stop buzzer
+        transmit("BZ");
+        Serial.println("Buzzer stops!");
+        Serial.println("Tank Full!");
+        sendToSubject("esp32/events", "Tank_Stop_Filling");
+        isFillingTank = false;
+    }
+     resetValues();
+
 }
 
 // TODO: Soil Moisture Detection
@@ -422,32 +444,30 @@ double getSoilMoisture()
 void soilMoistureCheck()
 {
     double moisture = getSoilMoisture();
-    Serial.println(moisture);
-    if (moisture < 40)
+    if (moisture < 40 and isIrrigating == false)
     {
         // open water tank valve
-        transmit("_OV");
+        transmit("OV");
         Serial.println("Valve Open!");
         // irrigation
         Serial.println("Irrigation Started!");
         sendToSubject("esp32/events", "Irrigation");
-        double soilM = 0;
-        do
-        {
-            soilM = getSoilMoisture();
-            Serial.println(soilM);
-            delay(500);
-        } while (soilM < 70);
-        transmit("_CV");
+        isIrrigating = true;
+    }
+    if (isIrrigating == true and moisture >= 70) {
+        transmit("CV");
         sendToSubject("esp32/events", "Tank_Stop_Filling");
         Serial.println("Valve Closed!");
         Serial.println("Irrigation Stopped!");
         sendToSubject("esp32/events", "No-Irrigation");
+        isIrrigating = false;
     }
-
+//    resetValues();
     return;
 }
+#pragma endregion Custom Sensors
 
+#pragma region Light and temperature control
 // TODO: Temperature System
 /*
 
@@ -479,44 +499,68 @@ void soilMoistureCheck()
     - Green Led ON (until 25C)
 */
 
-void regulateTemperature()
+void requestTemperature()
 {
-    getMetric("IT");
-    String msg = String(metric);
-    sendToSubject("esp32/temperatureIN", msg);
-    unsigned int temperatureIn = metric;
-    getMetric("OT");
-    msg = String(metric);
-    sendToSubject("esp32/temperatureOUT", msg);
-    unsigned int temperatureOut = metric;
-    getMetric("IL");
-    msg = String(metric);
-    sendToSubject("esp32/lightIN", msg);
-    unsigned int lightIn = metric;
-    getMetric("OL");
-    msg = String(metric);
-    sendToSubject("esp32/lightOUT", msg);
-    unsigned int lightOut = metric;
+    // request values
+    //tempIn
+    if (isDefaultValue(temperatureIn, true, temp)) {
+        tempRequestCnt++;
+        transmit("IT");
+        lastRequest = millis();
+    }
+    else if (isLate(lastRequest) and isDefaultValue(temperatureIn, false, temp))
+        tempRequestCnt--;
 
+    //tempOut
+    if (isDefaultValue(temperatureOut, true, temp)) {
+        tempRequestCnt++;
+        transmit("OT");
+        lastRequest = millis();
+    }
+    else if (isLate(lastRequest) and isDefaultValue(temperatureOut, false, temp))
+        tempRequestCnt--;
+
+    // LightIn
+    if (isDefaultValue(lightIn, true, temp)) {
+        tempRequestCnt++;
+        transmit("IL");
+        lastRequest = millis();
+    }
+    else if (isLate(lastRequest) and isDefaultValue(lightIn, false, temp))
+        tempRequestCnt--;
+
+    //LightOut
+    if (isDefaultValue(lightOut, true, temp)) {
+        tempRequestCnt++;
+        transmit("OL");
+        lastRequest = millis();
+    }
+    else if (isLate(lastRequest) and isDefaultValue(lightOut, false, temp))
+        tempRequestCnt--;
+
+    // exit if any of the value has not been received 
+    if (isDefaultValue(lightIn, false, temp) or
+        isDefaultValue(lightOut, false, temp) or
+        isDefaultValue(temperatureOut, false, temp) or
+        isDefaultValue(temperatureIn, false, temp))
+        return;
+    Serial.println("Got all values");
     //    if (temperatureOut >= 22 and temperatureOut <= 31)
     if (temperatureOut >= 22 and temperatureOut <= 31)
-    {
-        checkShutterState(temperatureIn, temperatureOut, lightIn, lightIn);
-    }
+        checkShutterState();
     else
     {
         // close shutter - activate air-conditioning
         // TODO: call the shutter position function
         Serial.println("AC");
-        airConditioning(temperatureIn, temperatureOut);
+        airConditioning();
     }
 }
 
-void airConditioning(unsigned int tempIn, unsigned int tempOut)
+void airConditioning()
 {
-
-    //    if (tempIn < 23)
-    if (tempIn < 23)
+    //    if (temperatureIn < 23)
+    if (temperatureIn < 23)
     {
         Serial.println("Activating Hot Air-Conditioning!");
         sendToSubject("esp32/events", "Heating");
@@ -525,15 +569,15 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         doesHeating = 1;
         delay(2000);
     }
-    //    else if (tempIn >= 28)
-    else if (tempIn >= 28)
+    //    else if (temperatureIn >= 28)
+    else if (temperatureIn >= 28)
     {
         Serial.println("Hot Air-Conditioning disabled!");
         doesHeating = 0;
         digitalWrite(redLedPin, LOW);
     }
 
-    if (tempIn > 30)
+    if (temperatureIn > 30)
     {
         Serial.println("Activating Cold Air-Conditioning!");
         sendToSubject("esp32/events", "Cooling");
@@ -542,7 +586,7 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
         doesCooling = 1;
         delay(2000);
     }
-    else if (tempIn < 25)
+    else if (temperatureIn < 25)
     {
         Serial.println("Cold Air-Conditioning disabled!");
         doesCooling = 0;
@@ -556,101 +600,31 @@ void airConditioning(unsigned int tempIn, unsigned int tempOut)
     }
 }
 
-void moveShutter(int direction, unsigned int sensorPin)
-{
-    unsigned int step;
-    unsigned int touched = 0;
-    if (direction > 0)
-        step = stepsPerRevolution;
-    else
-        step = -stepsPerRevolution;
-    do
-    {
-        // CW movement
-        stepper.setSpeed(10);
-        stepper.step(step);
-        delay(800);
-        touched = touchRead(sensorPin);
-        Serial.println(touched);
-    } while (touched > 20);
-}
-void changeShutterState(char state)
-{
-    unsigned int touched = 0;
-    if (state == 'C')
-    {
-        touched = touchRead(endTouchSensorPin);
-        if (shutterState == 'C' or touched < 20)
-            return;
-        sendToSubject("esp32/events", "Moving_to_the_End");
-        Serial.println("Moving_to_the_End");
-        moveShutter(1, endTouchSensorPin);
-        shutterState = 'C';
-        sendToSubject("esp32/events", "Still_at_End");
-    }
-    else if (state == 'O')
-    {
-        Serial.println("Enter_O");
-        touched = touchRead(startTouchSensorPin);
-        if (shutterState == 'O' or touched < 20)
-            return;
-        Serial.println("Enter_O_afc");
-        sendToSubject("esp32/events", "Moving_to_the_Start");
-        Serial.println("Moving_to_the_Start");
-        moveShutter(-1, startTouchSensorPin);
-        sendToSubject("esp32/events", "Still_at_Start");
-        shutterState = 'O';
-    }
-    else if (state == 'M')
-    {
-        touched = touchRead(middleTouchSensorPin);
-        if (shutterState == 'M' or touched < 20)
-            return;
-        sendToSubject("esp32/events", "Moving_to_the_Middle");
-        Serial.println("Moving_to_the_Middle");
-        if (shutterState == 'C')
-            moveShutter(-1, middleTouchSensorPin);
-        else
-            moveShutter(1, middleTouchSensorPin);
-        sendToSubject("esp32/events", "Still_at_Middle");
-        shutterState = 'M';
-    }
-}
+#pragma endregion Light and temperature control
 
-void checkShutterState(unsigned int tempIn, unsigned int tempOut, unsigned int lightIn, unsigned int lightOut)
-{
-    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    if (tempIn >= (tempOut + 1))
-    {
-        // TODO: call AI to decide the state (Middle or Fully Open)
-        // The light intensity inside the greenhouse should remain between 40%-80% of the external one.
-        changeShutterState('O');
-    }
-    // Open Shutter (when Inside temperature is at least 1C above Outside temperature)
-    else if (tempIn <= (tempOut - 1))
-    {
-        changeShutterState('C');
-    }
-}
-
+#pragma region Humidity
 // TODO: Humidification System (DC Motor)
 /*
     # Outside 50% - 70%
-
     - Active humidification/dehumidification (until humidity reaches 60%)
     - Yellow Led ON (until humidity reaches 60%)
 */
 
 void humiditySystem()
 {
-    getMetric("IH");
-    String msg = String(metric);
-    sendToSubject("esp32/humidity", msg);
-    unsigned int humidity = metric;
+    if (isDefaultValue(humidity, true, hum)) {
+        humidityRequestCnt++;
+        transmit("IH");
+        lastRequest = millis();
+    }
+    else if (isLate(lastRequest) and isDefaultValue(humidity, false, hum))
+        humidityRequestCnt--;
+
+    if (isDefaultValue(humidity, false, hum))
+        return;
 
     if (humidity < 50)
     {
-
         // humidification
         digitalWrite(yellowLedPin, HIGH);
         Serial.println("Start Humidification");
@@ -693,6 +667,55 @@ void humiditySystem()
             digitalWrite(yellowLedPin, LOW);
         doesDeHumidification = 0;
     }
+    // resetValues();
+}
+#pragma endregion Humidity
+
+#pragma region Setup and Loop                                            
+void setup()
+{
+    Serial.println("Setup");
+    // initialize serial
+    Serial.begin(9600);
+    // Bluetooth setup
+    bluetooth.begin(38400);
+    // Wifi
+    setup_wifi();
+    client.setServer(mQtt_server, mQtt_brokerPort);
+    client.setCallback(callback);
+    // Led pin setup
+    pinMode(redLedPin, OUTPUT);
+    pinMode(yellowLedPin, OUTPUT);
+    pinMode(greenLedPin, OUTPUT);
+    pinMode(aiLedPin, OUTPUT);
+    // dc motor setup
+    pinMode(dcMotorPinIn1, OUTPUT);
+    pinMode(dcMotorPinIn2, OUTPUT);
+    pinMode(dcMotorPinEN, OUTPUT);
+    // configure PWM functionalities
+    ledcSetup(pwmChannel, freq, resolution);
+    // attach the channel to the GPIO to be controlled
+    ledcAttachPin(dcMotorPinEN, pwmChannel);
+    // detect shutter position
+    detectShutterPosition();
+    delay(2000);
+    Serial.println("Green House Setup Completed");
+    Serial.flush();
 }
 
-// TODO: Server Communication (Node red)
+void loop()
+{
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
+    if (automaticMode) {
+        bluetoothReceive();
+        requestTemperature();
+        humiditySystem();
+        waterLevelCheck();
+        soilMoistureCheck();
+    }
+}
+#pragma endregion region Setup and Loop
